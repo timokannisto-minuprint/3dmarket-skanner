@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Skänner">
+<meta name="theme-color" content="#0f6b5c">
+<title>3dmarket kaamera-skänner</title>
+<style>
+:root{--bg:#0b1110;--fg:#eef3f1;--muted:#93a39e;--accent:#3fb59e;--ok:#3fd17a;--bad:#ff7a66;--line:#26302e;--sans:-apple-system,system-ui,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:15px/1.4 var(--sans);-webkit-tap-highlight-color:transparent}
+.app{display:flex;flex-direction:column;height:100%;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.top{display:flex;gap:6px;padding:10px 12px}
+.top button{flex:1;border:1.5px solid var(--line);background:none;color:var(--fg);font:600 14px var(--sans);padding:9px 4px;border-radius:10px}
+.top button[aria-pressed="true"]{border-color:var(--accent);background:#16342e;color:var(--accent)}
+.cam{position:relative;flex:1;min-height:0;margin:0 12px;border-radius:16px;overflow:hidden;background:#000}
+video{width:100%;height:100%;object-fit:cover;display:block}
+.frame{position:absolute;left:10%;right:10%;top:35%;bottom:35%;border:3px solid rgba(255,255,255,.7);border-radius:12px;transition:border-color .15s,background .15s}
+.frame.ok{border-color:var(--ok);background:rgba(63,209,122,.18)}
+.frame.bad{border-color:var(--bad);background:rgba(255,122,102,.15)}
+.start{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#000;color:var(--fg);border:0;font:700 20px var(--sans);text-align:center;padding:20px}
+.start span{font-weight:400;font-size:14px;color:var(--muted)}
+.last{padding:10px 14px;min-height:64px}
+.last .n{font-weight:600;font-size:16px}
+.last .c{font:13px var(--mono);color:var(--muted)}
+.bar{display:flex;align-items:center;gap:10px;padding:0 12px 12px}
+.bar .cnt{flex:1;font-weight:600}
+.btn{border:0;border-radius:12px;padding:14px 18px;font:700 16px var(--sans);background:var(--accent);color:#06201b}
+.btn.ghost{background:none;color:var(--muted);border:1.5px solid var(--line)}
+.sheet{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 12px);gap:10px;z-index:5}
+.sheet h2{margin:0;font-size:20px}
+.list{flex:1;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.list div{display:flex;justify-content:space-between;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
+.list div:first-child{border-top:0}
+.list b{font:600 15px var(--mono)}
+.unk{color:var(--bad)}
+.note{font-size:13px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row .btn{flex:1}
+textarea{width:100%;height:80px;background:#000;color:var(--muted);border:1px solid var(--line);border-radius:10px;font:12px var(--mono)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top" id="modes">
+    <button data-m="inventory" aria-pressed="true">Inventuur</button>
+    <button data-m="receipt" aria-pressed="false">Sisse</button>
+    <button data-m="sale" aria-pressed="false">Välja</button>
+  </div>
+  <div class="cam">
+    <video id="v" playsinline muted></video>
+    <div class="frame" id="frame"></div>
+    <button class="start" id="start">Alusta skännimist<span>Kaamera jääb lahti. Näita koode järjest, iga loetud kood piiksub.</span></button>
+  </div>
+  <div class="last" id="last"><div class="n">Valmis skännima</div><div class="c">Sama pooli uuesti lugemiseks vii kood korraks kaadrist välja.</div></div>
+  <div class="bar"><span class="cnt" id="cnt">0 tk</span><button class="btn ghost" id="undo" hidden>Võta viimane tagasi</button><button class="btn" id="done">Valmis</button></div>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <h2 id="sumTitle">Kokkuvõte</h2>
+  <div class="list" id="sumList"></div>
+  <p class="note">Vajuta „Kopeeri ja ava laoskänner“. Seal vajuta lahtris pikalt ja vali „Kleebi“, siis salvestub kõik korraga.</p>
+  <textarea id="payload" readonly hidden></textarea>
+  <div class="row">
+    <button class="btn ghost" id="back">Jätka skännimist</button>
+    <button class="btn" id="copy">Kopeeri ja ava laoskänner</button>
+  </div>
+  <button class="btn ghost" id="clear">Alusta uut vooru</button>
+</div>
+
+<script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
+<script>
+const ARTIFACT = 'https://claude.ai/artifact/RPJE9jrGDpxxgGNVRQdE3t';
+const TYPES = {inventory:'Inventuur', receipt:'Sisse', sale:'Välja'};
+const $ = id => document.getElementById(id);
+let mode = 'inventory', names = {}, scans = [];
+try { const s = JSON.parse(localStorage.getItem('scans') || '[]'); if (Array.isArray(s)) scans = s; mode = localStorage.getItem('mode') || mode; } catch(e){}
+fetch('names.json').then(r => r.json()).then(j => { names = j; render(); }).catch(() => {});
+
+function save(){ try { localStorage.setItem('scans', JSON.stringify(scans)); localStorage.setItem('mode', mode); } catch(e){} }
+function setMode(m){ mode = m; document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m)); save(); }
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.m));
+setMode(mode);
+
+let actx;
+function beep(ok){
+  try { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = ok ? 1760 : 330; g.gain.value = .1; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + (ok ? .09 : .25)); } catch(e){}
+  try { navigator.vibrate && navigator.vibrate(ok ? 50 : 200); } catch(e){}
+  const f = $('frame'); f.className = 'frame ' + (ok ? 'ok' : 'bad'); setTimeout(() => f.className = 'frame', 350);
+}
+const MODE_CODES = {'3DMSISSE':'receipt', '3DMVALJA':'sale', '3DMINV':'inventory'};
+function clean(c){ c = String(c).trim(); if (MODE_CODES[c.toUpperCase()]) return c.toUpperCase(); c = c.replace(/\D/g, ''); return c.length === 12 ? '0' + c : c; }
+function render(){
+  const n = scans.length; $('cnt').textContent = `${n} tk · ${TYPES[mode]}`; $('undo').hidden = !n;
+  if (n) { const s = scans[n-1]; $('last').innerHTML = `<div class="n">${names[s.c] ? esc(names[s.c]) : '<span class="unk">Tundmatu kood</span>'}</div><div class="c">${esc(s.c)} · ${TYPES[s.m]}</div>`; }
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let lastCode = '', lastSeen = 0;
+function onCode(raw){
+  const code = clean(raw), now = Date.now();
+  if (code === lastCode && now - lastSeen < 1500) { lastSeen = now; return; }
+  lastCode = code; lastSeen = now;
+  if (MODE_CODES[code]) { setMode(MODE_CODES[code]); beep(true); render(); return; }
+  if (code.length < 8) return;
+  scans.push({c: code, m: mode, t: new Date().toISOString()}); save(); beep(true); render();
+}
+
+$('start').onclick = async () => {
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch(e){}
+  $('start').textContent = 'Avan kaamerat…';
+  try {
+    const Z = ZXing, hints = new Map();
+    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.UPC_E, Z.BarcodeFormat.CODE_128]);
+    const reader = new Z.BrowserMultiFormatReader(hints, 150);
+    await reader.decodeFromConstraints({video: {facingMode: 'environment', width: {ideal: 1920}, height: {ideal: 1080}}}, $('v'), (res) => { if (res) onCode(res.getText()); });
+    $('start').hidden = true;
+    try { await navigator.wakeLock.request('screen'); } catch(e){}
+  } catch (e) {
+    $('start').innerHTML = 'Kaamerat ei õnnestunud avada<span>Luba kaamera kasutamine (Seaded → Safari → Kaamera) ja proovi uuesti.</span>';
+  }
+};
+$('undo').onclick = () => { scans.pop(); save(); render(); if (!scans.length) $('last').innerHTML = '<div class="n">Valmis skännima</div>'; };
+
+function summary(){
+  const agg = new Map();
+  scans.forEach(s => { const k = s.m + '|' + s.c; agg.set(k, (agg.get(k) || 0) + 1); });
+  return [...agg].map(([k, q]) => { const [m, c] = k.split('|'); return {m, c, q}; });
+}
+$('done').onclick = () => {
+  const sum = summary();
+  $('sumTitle').textContent = `Kokkuvõte: ${scans.length} tk, ${sum.length} koodi`;
+  $('sumList').innerHTML = sum.length ? sum.map(x => `<div><span>${names[x.c] ? esc(names[x.c]) : `<span class="unk">Tundmatu ${esc(x.c)}</span>`}<br><span class="note">${TYPES[x.m]}</span></span><b>${x.m === 'sale' ? '−' : '+'}${x.q}</b></div>`).join('') : '<div>Midagi pole veel skännitud.</div>';
+  $('payload').value = '3DMPARTII:' + JSON.stringify({v: 1, id: Date.now().toString(36), items: sum.map(x => [x.c, x.q, x.m])});
+  $('sheet').hidden = false;
+};
+$('back').onclick = () => $('sheet').hidden = true;
+$('copy').onclick = async () => {
+  const t = $('payload').value;
+  try { await navigator.clipboard.writeText(t); } catch (e) { $('payload').hidden = false; $('payload').select(); document.execCommand('copy'); }
+  location.href = ARTIFACT;
+};
+$('clear').onclick = () => { if ($('clear').dataset.c) { scans = []; save(); render(); $('last').innerHTML = '<div class="n">Valmis skännima</div>'; $('sheet').hidden = true; delete $('clear').dataset.c; $('clear').textContent = 'Alusta uut vooru'; } else { $('clear').dataset.c = 1; $('clear').textContent = 'Kustutan selle vooru? Vajuta uuesti'; } };
+render();
+</script>
+</body>
+</html>
