@@ -143,6 +143,8 @@ $('copy').onclick = async () => {
   try { await navigator.clipboard.writeText(t); } catch (e) {}
   const M = {inventory:'i', receipt:'r', sale:'s'}, b = JSON.parse(t.slice(10));
   const hash = ['p', b.id].concat(b.items.filter(x => /^\d{6,14}$/.test(x[0])).map(x => M[x[2]] + x[0] + 'x' + x[1])).join('-');
+  try { localStorage.setItem('lastSent', JSON.stringify(scans)); } catch(e){}
+  scans = []; save();
   location.href = ARTIFACT + '#' + hash;
 };
 $('clear').onclick = () => { if ($('clear').dataset.c) { scans = []; save(); render(); $('last').innerHTML = '<div class="n">Valmis skännima</div>'; $('sheet').hidden = true; delete $('clear').dataset.c; $('clear').textContent = 'Alusta uut vooru'; } else { $('clear').dataset.c = 1; $('clear').textContent = 'Kustutan selle vooru? Vajuta uuesti'; } };
