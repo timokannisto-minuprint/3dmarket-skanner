@@ -62,11 +62,11 @@ textarea{width:100%;height:80px;background:#000;color:var(--muted);border:1px so
 <div class="sheet" id="sheet" hidden>
   <h2 id="sumTitle">Kokkuvõte</h2>
   <div class="list" id="sumList"></div>
-  <p class="note">Vajuta „Kopeeri ja ava laoskänner“. Seal vajuta lahtris pikalt ja vali „Kleebi“, siis salvestub kõik korraga.</p>
+  <p class="note">„Saada lattu“ avab laoskänneri ja voor salvestub seal ise. Kui see mingil põhjusel ei õnnestu, on voor ka lõikelaual: kleebi see laoskänneri ülemisse lahtrisse.</p>
   <textarea id="payload" readonly hidden></textarea>
   <div class="row">
     <button class="btn ghost" id="back">Jätka skännimist</button>
-    <button class="btn" id="copy">Kopeeri ja ava laoskänner</button>
+    <button class="btn" id="copy">Saada lattu</button>
   </div>
   <button class="btn ghost" id="clear">Alusta uut vooru</button>
 </div>
@@ -140,8 +140,10 @@ $('done').onclick = () => {
 $('back').onclick = () => $('sheet').hidden = true;
 $('copy').onclick = async () => {
   const t = $('payload').value;
-  try { await navigator.clipboard.writeText(t); } catch (e) { $('payload').hidden = false; $('payload').select(); document.execCommand('copy'); }
-  location.href = ARTIFACT;
+  try { await navigator.clipboard.writeText(t); } catch (e) {}
+  const M = {inventory:'i', receipt:'r', sale:'s'}, b = JSON.parse(t.slice(10));
+  const hash = ['p', b.id].concat(b.items.filter(x => /^\d{6,14}$/.test(x[0])).map(x => M[x[2]] + x[0] + 'x' + x[1])).join('-');
+  location.href = ARTIFACT + '#' + hash;
 };
 $('clear').onclick = () => { if ($('clear').dataset.c) { scans = []; save(); render(); $('last').innerHTML = '<div class="n">Valmis skännima</div>'; $('sheet').hidden = true; delete $('clear').dataset.c; $('clear').textContent = 'Alusta uut vooru'; } else { $('clear').dataset.c = 1; $('clear').textContent = 'Kustutan selle vooru? Vajuta uuesti'; } };
 render();
