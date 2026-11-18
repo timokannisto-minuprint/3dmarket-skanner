@@ -1,0 +1,21 @@
+// PM2 seadistus veebimajutuses. Kopeeri serveris failiks ecosystem.config.js (seda faili gitti EI panda – sees on võtmed).
+module.exports = {
+  apps: [{
+    name: "ladu",
+    script: "app.py",
+    interpreter: "/www/apache/domains/www.3dmarket.ee/ladu-venv/bin/python",   // vt README
+    cwd: "/www/apache/domains/www.3dmarket.ee/ladu/ladu",
+    env: {
+      PORT: "3000",
+      TZ: "Europe/Tallinn",
+      LADU_URL: "https://ladu.3dmarket.ee",
+      LADU_ANDMED: "/www/apache/domains/www.3dmarket.ee/ladu-andmed",
+      LADU_VOTI: "<pikk juhuslik võti, sama mis Postikeskkonna ladu.json-is>",
+      TEL_VOTI: "<telefoni võti>",
+      SMARTPRINT_USER: "",
+      SMARTPRINT_PASS: ""
+    },
+    autorestart: true,
+    max_memory_restart: "300M"
+  }]
+};

@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Skänner">
+<meta name="theme-color" content="#0f6b5c">
+<title>3dmarket skänner</title>
+<style>
+:root{--bg:#0b1110;--fg:#eef3f1;--muted:#93a39e;--accent:#3fb59e;--ok:#3fd17a;--bad:#ff7a66;--line:#26302e;--sans:-apple-system,system-ui,"Segoe UI",sans-serif;--mono:ui-monospace,"SF Mono",Menlo,monospace;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:15px/1.4 var(--sans);-webkit-tap-highlight-color:transparent}
+.app{display:flex;flex-direction:column;height:100%;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.top{display:flex;gap:6px;padding:10px 12px}
+.top button{flex:1;border:1.5px solid var(--line);background:none;color:var(--fg);font:600 14px var(--sans);padding:9px 4px;border-radius:10px}
+.top button[aria-pressed="true"]{border-color:var(--accent);background:#16342e;color:var(--accent)}
+.cam{position:relative;flex:1;min-height:0;margin:0 12px;border-radius:16px;overflow:hidden;background:#000}
+video{width:100%;height:100%;object-fit:cover;display:block}
+.frame{position:absolute;left:15%;right:15%;top:50%;aspect-ratio:1;transform:translateY(-50%);border:3px solid rgba(255,255,255,.7);border-radius:12px;transition:border-color .15s,background .15s}
+.frame.ok{border-color:var(--ok);background:rgba(63,209,122,.18)}
+.frame.bad{border-color:var(--bad);background:rgba(255,122,102,.15)}
+.start{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#000;color:var(--fg);border:0;font:700 20px var(--sans);text-align:center;padding:20px}
+.start span{font-weight:400;font-size:14px;color:var(--muted)}
+.last{padding:10px 14px;min-height:64px}
+.last .n{font-weight:600;font-size:16px}
+.last .c{font:13px var(--mono);color:var(--muted)}
+.bar{display:flex;align-items:center;gap:10px;padding:0 12px 12px}
+.bar .cnt{flex:1;font-weight:600}
+.btn{border:0;border-radius:12px;padding:14px 18px;font:700 16px var(--sans);background:var(--accent);color:#06201b}
+.btn.ghost{background:none;color:var(--muted);border:1.5px solid var(--line)}
+.sheet{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 12px);gap:10px;z-index:5}
+.sheet h2{margin:0;font-size:20px}
+.list{flex:1;overflow:auto;border:1px solid var(--line);border-radius:12px}
+.list div{display:flex;justify-content:space-between;gap:10px;padding:8px 12px;border-top:1px solid var(--line)}
+.list div:first-child{border-top:0}
+.list b{font:600 15px var(--mono)}
+.unk{color:var(--bad)}
+.note{font-size:13px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row .btn{flex:1}
+textarea{width:100%;height:80px;background:#000;color:var(--muted);border:1px solid var(--line);border-radius:10px;font:12px var(--mono)}
+[hidden]{display:none!important}
+.net{display:flex;align-items:center;gap:6px;padding:0 14px 6px;font-size:13px;color:var(--muted)}
+.net i{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}
+.net.on i{background:var(--ok)}.net.off i{background:var(--bad)}
+.last .s{font-size:13px;color:var(--ok)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top" id="modes">
+    <button data-m="inventory" aria-pressed="true">Inventuur</button>
+    <button data-m="receipt" aria-pressed="false">Sisse</button>
+    <button data-m="sale" aria-pressed="false">Välja</button>
+  </div>
+  <div class="net" id="net"><i></i><span>Ühendan laoga…</span></div>
+  <div class="cam">
+    <video id="v" playsinline muted></video>
+    <div class="frame" id="frame"></div>
+    <button class="start" id="start">Alusta skännimist<span>Kaamera jääb lahti. Näita koode järjest, iga loetud kood piiksub ja läheb kohe lattu (ladu.3dmarket.ee).</span></button>
+  </div>
+  <div class="last" id="last"><div class="n">Valmis skännima</div><div class="c">Sama pooli uuesti lugemiseks vii kood korraks kaadrist välja.</div></div>
+  <div class="bar"><span class="cnt" id="cnt">0 tk</span><button class="btn ghost" id="undo" hidden>Võta viimane tagasi</button><button class="btn" id="done">Kokkuvõte</button></div>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <h2 id="sumTitle">Kokkuvõte</h2>
+  <div class="list" id="sumList"></div>
+  <p class="note" id="sumNote"></p>
+  <div class="row">
+    <button class="btn" id="back">Jätka skännimist</button>
+  </div>
+  <button class="btn ghost" id="clear">Alusta uut vooru</button>
+</div>
+
+<script src="zxing.min.js"></script>
+<script>
+// ladu.3dmarket.ee: skänner käib otse laoserverisse (sama andmebaas mida Postikeskkond näitab). Iga skänn saadetakse kohe;
+// ühenduseta jäävad skännid järjekorda (localStorage) ja saadetakse automaatselt, kui arvuti on jälle kättesaadav.
+const TYPES = {inventory:'Inventuur', receipt:'Sisse', sale:'Välja'};
+const $ = id => document.getElementById(id);
+const LS = {get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
+            set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }};
+(function(){ const m = location.hash.match(/k=([\w-]+)/); if (m) LS.set('voti', m[1]); })();
+const VOTI = LS.get('voti', '');
+let mode = LS.get('mode', 'inventory'), names = LS.get('nimed', {}), scans = LS.get('voor', []), queue = LS.get('jarjekord', []);
+let online = null, sending = false;
+
+function save(){ LS.set('voor', scans); LS.set('jarjekord', queue); LS.set('mode', mode); }
+function setMode(m){ mode = m; document.querySelectorAll('#modes button').forEach(b => b.setAttribute('aria-pressed', b.dataset.m === m)); save(); render(); }
+document.querySelectorAll('#modes button').forEach(b => b.onclick = () => setMode(b.dataset.m));
+
+async function api(path, body){
+  const r = await fetch(path, {method: body ? 'POST' : 'GET', headers: {'Content-Type': 'application/json', 'X-Voti': VOTI}, body: body ? JSON.stringify(body) : undefined, cache: 'no-store'});
+  const j = await r.json().catch(() => ({ok: false, viga: 'HTTP ' + r.status}));
+  if (!j.ok) { const e = new Error(j.viga || 'Viga'); e.status = r.status; throw e; }
+  return j;
+}
+function setNet(state, text){
+  online = state; const n = $('net'); n.className = 'net ' + (state ? 'on' : 'off');
+  n.querySelector('span').textContent = text || (state ? (queue.length ? `Ühendatud · saadan ${queue.length}…` : 'Ühendatud laoga · kõik saadetud') : `Ladu pole kättesaadav (internet?) · ${queue.length} ootel, saadan hiljem`);
+}
+async function loadNames(){
+  try { const j = await api('/api/nimed'); names = j.nimed || {}; LS.set('nimed', names); setNet(true); render(); }
+  catch(e){ setNet(false, e.status === 403 ? 'Võti puudub: skänni Postikeskkonnast (Filament → 📱 Telefon) QR-kood uuesti' : null); }
+}
+async function flush(){
+  if (sending || !queue.length) return; sending = true;
+  try {
+    while (queue.length) {
+      const q = queue[0];
+      try {
+        const j = await api('/api/kanne', {g: q.g, kood: q.c, tyyp: q.m, kogus: 1, aeg: q.t});
+        const s = scans.find(x => x.g === q.g);
+        if (s && j.kustutatud) scans.splice(scans.indexOf(s), 1);   // arvutis juba kustutatud
+        else if (s) { s.ok = 1; s.unk = j.tundmatu ? 1 : 0; if (j.nimi) s.n = j.nimi; if (j.laos != null) s.l = j.laos; }
+        queue.shift(); save(); setNet(true); render();
+      } catch(e) {
+        if (e.status === 400) { queue.shift(); save(); continue; }   // vigane skänn – jäta vahele
+        setNet(false, e.status === 403 ? 'Võti puudub: skänni Postikeskkonnast (Filament → 📱 Telefon) QR-kood uuesti' : null); break;
+      }
+    }
+  } finally { sending = false; }
+  if (!queue.length) setNet(true);
+}
+setInterval(() => { if (queue.length) flush(); else if (online === false) loadNames(); }, 4000);
+window.addEventListener('online', flush);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) flush(); });
+
+let actx;
+function beep(ok){
+  try { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = ok ? 1760 : 330; g.gain.value = .1; o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + (ok ? .09 : .25)); } catch(e){}
+  try { navigator.vibrate && navigator.vibrate(ok ? 50 : 200); } catch(e){}
+  const f = $('frame'); f.className = 'frame ' + (ok ? 'ok' : 'bad'); setTimeout(() => f.className = 'frame', 350);
+}
+const MODE_CODES = {'3DMSISSE':'receipt', '3DMVALJA':'sale', '3DMINV':'inventory'};
+function clean(c){ c = String(c).trim(); if (MODE_CODES[c.toUpperCase()]) return c.toUpperCase(); c = c.replace(/\D/g, ''); return c.length === 12 ? '0' + c : c; }
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function nm(s){ return s.n || names[s.c] || ''; }
+function render(){
+  const n = scans.length; $('cnt').textContent = `${n} tk · ${TYPES[mode]}`; $('undo').hidden = !n;
+  if (!n) { $('last').innerHTML = '<div class="n">Valmis skännima</div><div class="c">Sama pooli uuesti lugemiseks vii kood korraks kaadrist välja.</div>'; return; }
+  const s = scans[n-1], name = nm(s);
+  const st = !s.ok ? '<span style="color:var(--muted)">ootel, saadan lattu…</span>' : s.unk ? '<span class="unk">Tundmatu kood – seo Postikeskkonnas tootega (Filament → 📱 Telefon)</span>' : `✓ laos nüüd ${s.l}`;
+  $('last').innerHTML = `<div class="n">${name && !s.unk ? esc(name) : '<span class="unk">Tundmatu kood</span>'}</div><div class="c">${esc(s.c)} · ${TYPES[s.m]}</div><div class="s">${st}</div>`;
+}
+
+let lastCode = '', lastSeen = 0;
+function onCode(raw){
+  const code = clean(raw), now = Date.now();
+  if (code === lastCode && now - lastSeen < 1500) { lastSeen = now; return; }
+  lastCode = code; lastSeen = now;
+  if (MODE_CODES[code]) { setMode(MODE_CODES[code]); beep(true); return; }
+  if (code.length < 8) return;
+  const g = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const s = {g, c: code, m: mode, t: new Date().toISOString()};
+  scans.push(s); queue.push(s); save(); beep(!!names[code]); render(); flush();
+}
+
+$('start').onclick = async () => {
+  try { actx = new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch(e){}
+  $('start').textContent = 'Avan kaamerat…';
+  try {
+    const v = $('v');
+    v.srcObject = await navigator.mediaDevices.getUserMedia({audio: false, video: {facingMode: 'environment', width: {ideal: 1920}, height: {ideal: 1080}}});
+    await v.play();
+    $('start').hidden = true;
+    try { await navigator.wakeLock.request('screen'); } catch(e){}
+    startLoop(v);
+  } catch (e) {
+    $('start').innerHTML = 'Kaamerat ei õnnestunud avada<span>Luba kaamera kasutamine (Seaded → Safari → Kaamera) ja proovi uuesti. Kui aadressiribal on hoiatus, pole sertifikaat paigaldatud (vt juhend).</span>';
+  }
+};
+// Kood loetakse igas asendis: kasutab BarcodeDetectorit kui olemas, muidu ZXingi pööratud kaadritega (0°, 90°, 45°, 135°).
+async function startLoop(v){
+  let native = null;
+  try {
+    if ('BarcodeDetector' in window) {
+      const want = ['ean_13','ean_8','upc_a','upc_e','code_128'], have = await BarcodeDetector.getSupportedFormats();
+      const f = want.filter(x => have.includes(x)); if (f.length >= 3) native = new BarcodeDetector({formats: f});
+    }
+  } catch(e){ native = null; }
+  const Z = ZXing, hints = new Map();
+  hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.UPC_E, Z.BarcodeFormat.CODE_128]);
+  const reader = new Z.MultiFormatReader(); reader.setHints(hints);
+  const cv = document.createElement('canvas'), cx = cv.getContext('2d', {willReadFrequently: true});
+  const ANG = [0, 90, 45, 135]; let i = 0;
+  async function tick(){
+    if (v.readyState >= 2 && v.videoWidth) {
+      try {
+        if (native) {
+          const r = await native.detect(v); if (r.length) onCode(r[0].rawValue);
+        } else {
+          const vw = v.videoWidth, vh = v.videoHeight, side = Math.min(vw, vh), S = Math.min(side, 900);
+          if (cv.width !== S) { cv.width = S; cv.height = S; }
+          const a = ANG[i++ % ANG.length] * Math.PI / 180;
+          cx.setTransform(1, 0, 0, 1, 0, 0); cx.fillStyle = '#fff'; cx.fillRect(0, 0, S, S);
+          cx.translate(S/2, S/2); cx.rotate(a);
+          const src = side;
+          cx.drawImage(v, (vw - src)/2, (vh - src)/2, src, src, -S/2, -S/2, S, S);
+          const lum = new Z.HTMLCanvasElementLuminanceSource(cv), bmp = new Z.BinaryBitmap(new Z.HybridBinarizer(lum));
+          try { const r = reader.decodeWithState(bmp); if (r) { onCode(r.getText()); i = 0; } } catch(e){}
+        }
+      } catch(e){}
+    }
+    setTimeout(tick, native ? 120 : 40);
+  }
+  tick();
+}
+$('undo').onclick = async () => {
+  const s = scans.pop(); if (!s) return;
+  const qi = queue.findIndex(x => x.g === s.g);
+  if (qi >= 0) queue.splice(qi, 1);
+  else { try { await api('/api/tagasi', {g: s.g}); } catch(e){ alert('Tagasivõtmine ei õnnestunud (ladu pole kättesaadav). Kustuta kanne Postikeskkonnas.'); scans.push(s); } }
+  save(); render();
+};
+
+function summary(){
+  const agg = new Map();
+  scans.forEach(s => { const k = s.m + '|' + s.c; const a = agg.get(k) || {m: s.m, c: s.c, q: 0, s}; a.q++; a.s = s; agg.set(k, a); });
+  return [...agg.values()];
+}
+$('done').onclick = () => {
+  const sum = summary(), unk = sum.filter(x => x.s.unk || !nm(x.s)).length;
+  $('sumTitle').textContent = `Kokkuvõte: ${scans.length} tk, ${sum.length} koodi`;
+  $('sumList').innerHTML = sum.length ? sum.map(x => `<div><span>${nm(x.s) && !x.s.unk ? esc(nm(x.s)) : `<span class="unk">Tundmatu ${esc(x.c)}</span>`}<br><span class="note">${TYPES[x.m]}${x.s.ok && x.s.l != null ? ' · laos ' + x.s.l : ''}</span></span><b>${x.m === 'sale' ? '−' : '+'}${x.q}</b></div>`).join('') : '<div>Midagi pole veel skännitud.</div>';
+  $('sumNote').textContent = (queue.length ? `${queue.length} skänni on veel ootel ja saadetakse lattu, kui ühendus tekib. ` : 'Kõik skännid on laos. ')
+    + (unk ? `Tundmatud koodid (${unk}) seo Postikeskkonnas: Filament → 📱 Telefon.` : '');
+  $('sheet').hidden = false;
+};
+$('back').onclick = () => $('sheet').hidden = true;
+$('clear').onclick = () => {
+  if (!$('clear').dataset.c) { $('clear').dataset.c = 1; $('clear').textContent = queue.length ? 'Ootel skännid jäävad alles. Vajuta uuesti' : 'Tühjendan nimekirja? Vajuta uuesti'; return; }
+  scans = scans.filter(s => queue.some(q => q.g === s.g)); save(); render(); $('sheet').hidden = true; delete $('clear').dataset.c; $('clear').textContent = 'Alusta uut vooru';
+};
+setMode(mode); render(); loadNames().then(flush);
+</script>
+</body>
+</html>
