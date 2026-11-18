@@ -1,0 +1,92 @@
+/* ladu.3dmarket.ee veebi kujundus – kiht Postikeskkonna stiilide peal (tee_ladu_html.py lisab selle) */
+:root{
+  --bg:#f3f5f4; --panel:#ffffff; --ink:#0f1a17; --muted:#64716c; --line:#e3e8e5; --soft:#f8faf9; --sel:#eef7f4;
+  --accent:#e5484d; --accent-ink:#fff; --accent-soft:#fdecec; --ok:#0f766e; --ok-soft:#e1f3ef;
+  --warn:#b26b00; --warn-soft:#fdf3e1; --blue:#3b6fd4; --blue-soft:#e8effc;
+  --side:#0b1412; --side2:#13211e; --side-ink:#e6efec; --side-muted:#8ea39c;
+  --r:12px; --sh:0 1px 2px rgba(16,24,22,.05),0 4px 14px rgba(16,24,22,.05);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0c1211; --panel:#141c1a; --ink:#e8efec; --muted:#91a29c; --line:#24302d; --soft:#111917; --sel:#17302a;
+  --accent:#ff6b6f; --accent-soft:#3a1d1e; --ok:#2fb39f; --ok-soft:#123029; --warn:#f0a43a; --warn-soft:#33270f;
+  --blue:#6d9bff; --blue-soft:#17233d; --side:#070c0b; --side2:#0f1816; --sh:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+  color-scheme:dark;
+}}
+html,body{font:14px/1.5 "Inter",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg)}
+.app.fil-mode{height:100vh;grid-template-columns:232px 1fr}
+button{border-radius:9px;border-color:var(--line);background:var(--panel);transition:background .15s,border-color .15s,box-shadow .15s}
+button:hover{border-color:color-mix(in srgb,var(--ok) 40%,var(--line))}
+button.green{background:var(--ok);border-color:var(--ok)}button.green:hover:not(:disabled){background:color-mix(in srgb,var(--ok) 85%,#000);border-color:transparent}
+input,select,textarea{border-radius:9px;border-color:var(--line);background:var(--panel)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent)}
+/* külgriba */
+.side{background:linear-gradient(180deg,var(--side2),var(--side));color:var(--side-ink);padding:6px 10px 12px}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 6px 18px;font-size:16px;letter-spacing:-.01em}
+.brand .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#2fb39f,#0f766e);font-size:18px;box-shadow:0 4px 14px rgba(47,179,159,.35)}
+.brand small{color:var(--side-muted);font-weight:500}
+.side .nav{display:flex;flex-direction:column;gap:2px}
+.side .nav a,.side .nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 12px;border-radius:10px;border:0;background:transparent;color:var(--side-ink);text-decoration:none;font-size:14px}
+.side .nav a:hover,.side .nav button:hover{background:rgba(255,255,255,.06)}
+.side .nav .on{background:rgba(47,179,159,.16);color:#7fe0cf;font-weight:600}
+.side .nav .ic{width:20px;text-align:center}
+.side .navh{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--side-muted);margin:18px 12px 6px}
+.side .foot{margin-top:auto;padding:10px 12px;font-size:12px;color:var(--side-muted)}
+.tabn{background:#2fb39f;color:#04201b}
+/* päis */
+.fil .bhead{position:sticky;top:0;z-index:5;gap:12px;padding:14px 22px;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.fil .bhead h2{font-size:19px;letter-spacing:-.02em;margin:0 8px 0 0}
+.seg{background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:3px;display:inline-flex;gap:2px}
+.seg button{border:0;background:transparent;border-radius:8px;padding:6px 12px;color:var(--muted);font-weight:500}
+.seg button:hover{color:var(--ink);background:var(--panel)}
+.fil .seg button.on{background:var(--panel);color:var(--ink);box-shadow:var(--sh);font-weight:600}
+#filMode button.on{background:var(--ok);color:#fff}
+#filMode button.on.sale{background:var(--accent)}#filMode button.on.receipt{background:var(--blue)}
+.filscan{border-radius:11px;border-width:1.5px;width:280px}
+/* sisu */
+.filmain,.filscroll{padding:18px 22px}
+.filside{background:transparent;border-left:1px solid var(--line);padding:18px 16px}
+table.fil-t{border-radius:var(--r);border-color:var(--line);box-shadow:var(--sh);overflow:hidden}
+table.fil-t th{background:var(--soft);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;padding:10px 12px}
+table.fil-t td{padding:8px 12px;border-color:var(--line)}
+table.fil-t tbody tr:hover td{background:var(--sel)}
+.filimg{width:40px;height:40px;border-radius:10px;background:#fff}
+table.fil-t .im{width:52px}
+.filstat,.filcard,.filbar,.filmv,.filtund{border-radius:var(--r);border-color:var(--line);box-shadow:var(--sh);background:var(--panel)}
+.filstat{padding:14px 18px}
+.filstat b{font-size:24px;letter-spacing:-.02em}
+.filh{color:var(--muted);letter-spacing:.08em}
+.modal .mbox{border-radius:16px}
+.toast{border-radius:12px}
+/* ülevaade */
+.filv.yl{padding:22px;overflow:auto;min-height:0;flex:1}
+.filv.yl.on{display:block}
+.yl .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.yl .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.yl .kpi .v{font-size:clamp(20px,2vw,26px);white-space:nowrap;padding-right:22px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.yl .kpi .l{font-size:12.5px;color:var(--muted)}
+.yl .kpi .ic{position:absolute;right:12px;top:10px;font-size:16px;opacity:.6}
+.yl .kpi.hi{background:linear-gradient(135deg,#0f766e,#2fb39f);color:#fff;border-color:transparent}
+.yl .kpi.hi .l{color:rgba(255,255,255,.8)}
+.yl .kpi.warnk .v{color:var(--warn)}
+.yl .grid{display:grid;align-items:start;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px}
+.yl .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--sh);min-width:0}
+.yl .card h3{margin:0 0 4px;font-size:15px;letter-spacing:-.01em}
+.yl .card .hint{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.yl .rows .r{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);cursor:pointer}
+.yl .rows .r:first-child{border-top:0}
+.yl .rows .r:hover .n{color:var(--ok)}
+.yl .rows .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.yl .rows .q{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.yl .rows img{width:32px;height:32px;border-radius:8px;object-fit:contain;background:#fff;flex:none}
+.yl .bar{height:6px;border-radius:3px;background:var(--ok-soft);overflow:hidden;width:90px;flex:none}
+.yl .bar i{display:block;height:100%;background:var(--ok);border-radius:3px}
+.yl .chart svg{width:100%;height:220px;display:block}
+.yl .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.yl .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.yl .exp{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.yl .exp input{width:auto}
+.yl .empty2{color:var(--muted);font-size:13px;padding:8px 0}
+.yl .chips{display:flex;flex-wrap:wrap;gap:6px}
+.yl .chip{font-size:12px;padding:3px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent);cursor:pointer}
+@media (max-width:900px){.app.fil-mode{grid-template-columns:1fr}.side{display:none}.filbody{grid-template-columns:1fr}.filside{display:none}.filscan{width:100%}}

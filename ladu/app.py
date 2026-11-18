@@ -291,6 +291,98 @@ def tel_tagasi():
     return ok(kustutatud=n)
 
 
+# ---------------------------------------------------------------- ülevaade, eksport, varukoopia
+@app.get("/api/ladu/ylevaade")
+def ladu_ylevaade():
+    """Ülevaate-lehe arvud: kuude kaupa liikumised (12 kuud), müügi top, seisev kaup, laoväärtus."""
+    k = filament.kataloog()["by_sku"]
+    tana = dt.date.today()
+    alg = (tana.replace(day=1) - dt.timedelta(days=335)).replace(day=1).isoformat()
+    p30, p90 = (tana - dt.timedelta(days=30)).isoformat(), (tana - dt.timedelta(days=90)).isoformat()
+    with db() as c:
+        laos = filament._laoseis(c)
+        kuud = {}
+        for r in c.execute("SELECT substr(aeg,1,7) m, tyyp, SUM(ABS(kogus)) q FROM filament_liikumine WHERE aeg>=? GROUP BY m, tyyp", (alg,)):
+            kuud.setdefault(r["m"], {})[r["tyyp"]] = r["q"]
+        myyk30 = {r["sku"]: r["q"] for r in c.execute(
+            "SELECT sku, SUM(-kogus) q FROM filament_liikumine WHERE tyyp='sale' AND aeg>=? GROUP BY sku", (p30,))}
+        myyk90 = {r["sku"]: r["q"] for r in c.execute(
+            "SELECT sku, SUM(-kogus) q FROM filament_liikumine WHERE tyyp='sale' AND aeg>=? GROUP BY sku", (p90,))}
+        viimane = {r["sku"]: r["a"] for r in c.execute(
+            "SELECT sku, MAX(aeg) a FROM filament_liikumine WHERE tyyp IN ('sale','receipt') GROUP BY sku")}
+        tana_n = c.execute("SELECT COUNT(*) n, COALESCE(SUM(CASE WHEN tyyp='sale' THEN -kogus ELSE 0 END),0) v FROM filament_liikumine WHERE aeg>=?",
+                           (tana.isoformat(),)).fetchone()
+    hind = lambda s: (k.get(s) or {}).get("hind") or 0
+    m = []
+    d = tana.replace(day=1)
+    for _ in range(12):
+        key = d.strftime("%Y-%m")
+        m.append({"kuu": key, **{t: kuud.get(key, {}).get(t, 0) for t in ("sale", "receipt", "inventory", "adjust")}})
+        d = (d - dt.timedelta(days=1)).replace(day=1)
+    m.reverse()
+    top = sorted(myyk30.items(), key=lambda x: -x[1])[:10]
+    seisev = sorted([(s, q) for s, q in laos.items() if q > 0 and not myyk90.get(s) and s in k],
+                    key=lambda x: -x[1] * hind(x[0]))[:15]
+    return ok(
+        tooteid=sum(1 for v in laos.values() if v > 0), rulle=sum(v for v in laos.values() if v > 0),
+        vaartus=round(sum(v * hind(s) for s, v in laos.items() if v > 0), 2),
+        negatiivsed=[{"sku": s, "laos": q} for s, q in laos.items() if q < 0][:20],
+        myyk30=sum(myyk30.values()), myyk30_eur=round(sum(q * hind(s) for s, q in myyk30.items()), 2),
+        myyk90=sum(myyk90.values()), kuud=m, tana_kandeid=tana_n["n"], tana_myyk=tana_n["v"],
+        top=[{"sku": s, "q": q, "laos": laos.get(s, 0)} for s, q in top],
+        seisev=[{"sku": s, "laos": q, "vaartus": round(q * hind(s), 2), "viimane": viimane.get(s, "")} for s, q in seisev])
+
+
+@app.get("/api/ladu/laoseis.csv")
+def ladu_laoseis_csv():
+    """Laoseis CSV-na (Excel, raamatupidamine, inventuuri aruanne). ?kuupaev=YYYY-MM-DD -> seis selle päeva lõpu seisuga."""
+    import csv, io
+    kp = (request.args.get("kuupaev") or "").strip()[:10]
+    k = filament.kataloog()
+    with db() as c:
+        if kp:
+            laos = {r["sku"]: r["s"] for r in c.execute(
+                "SELECT sku, SUM(kogus) s FROM filament_liikumine WHERE substr(aeg,1,10)<=? GROUP BY sku", (kp,))}
+        else:
+            laos = filament._laoseis(c)
+    out = io.StringIO()
+    w = csv.writer(out, delimiter=";")
+    w.writerow(["SKU", "EAN", "Nimetus", "Tootja", "Materjal", "Värv", "Kogus", "Ostuhind €", "Väärtus €"])
+    kokku = 0.0
+    for t in k["tooted"]:
+        q = laos.get(t["sku"], 0)
+        if not q:
+            continue
+        v = round(q * (t["hind"] or 0), 2)
+        kokku += v
+        w.writerow([t["sku"], t["ean"], t["nimi"], t["tootja"], t["mat"], t["varv"], q,
+                    str(t["hind"] or "").replace(".", ","), str(v).replace(".", ",")])
+    w.writerow(["", "", "KOKKU", "", "", "", sum(v for v in laos.values() if v), "", str(round(kokku, 2)).replace(".", ",")])
+    nimi = f"laoseis-{kp or dt.date.today().isoformat()}.csv"
+    return ("\ufeff" + out.getvalue()), 200, {"Content-Type": "text/csv; charset=utf-8",
+                                              "Content-Disposition": f'attachment; filename="{nimi}"'}
+
+
+def _varukoopia_tsykkel():
+    """Iga päev üks koopia andmed/varu/ladu-YYYY-MM-DD.db (SQLite backup API), alles 30 viimast."""
+    varu = os.path.join(ANDMED, "varu")
+    os.makedirs(varu, exist_ok=True)
+    while True:
+        try:
+            siht = os.path.join(varu, f"ladu-{dt.date.today().isoformat()}.db")
+            if not os.path.exists(siht):
+                src = sqlite3.connect(DB_PATH)
+                dst = sqlite3.connect(siht)
+                with dst:
+                    src.backup(dst)
+                src.close(); dst.close()
+                for f in sorted(x for x in os.listdir(varu) if x.startswith("ladu-") and x.endswith(".db"))[:-30]:
+                    os.remove(os.path.join(varu, f))
+        except Exception as e:
+            print("Varukoopia viga:", e)
+        time.sleep(3600)
+
+
 # ---------------------------------------------------------------- e-pood (ainult lugemine)
 @app.get("/api/pood/laoseis")
 def pood_laoseis():
@@ -466,6 +558,9 @@ def ladu_eksport():
 
 
 init_db()
+
+if __name__ == "__main__" and "--parool" not in sys.argv:
+    threading.Thread(target=_varukoopia_tsykkel, daemon=True, name="varu").start()
 
 if __name__ == "__main__" and "--parool" in sys.argv:   # python app.py --parool  -> prindib räsi LADU_PAROOL_RASI jaoks
     import getpass

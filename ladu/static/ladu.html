@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>3dmarket ladu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧵</text></svg>">
 <style>
 :root{
   --bg:#f4f2ee; --panel:#ffffff; --ink:#1d1d1b; --muted:#6f6b63; --line:#e3dfd7; --soft:#f9f8f5;
@@ -540,24 +543,121 @@ table.debt-t,table.fil-t{border-radius:12px;box-shadow:var(--shadow)}
 /* ===== v106 lõpp ===== */
 </style>
 <style>
-.app.fil-mode{height:100vh}
-.side .brand small{display:block}
-.side .lnk{display:block;padding:8px 12px;border-radius:8px;color:inherit;text-decoration:none;margin:2px 0}
-.side .lnk:hover{background:rgba(127,127,127,.12)}
+/* ladu.3dmarket.ee veebi kujundus – kiht Postikeskkonna stiilide peal (tee_ladu_html.py lisab selle) */
+:root{
+  --bg:#f3f5f4; --panel:#ffffff; --ink:#0f1a17; --muted:#64716c; --line:#e3e8e5; --soft:#f8faf9; --sel:#eef7f4;
+  --accent:#e5484d; --accent-ink:#fff; --accent-soft:#fdecec; --ok:#0f766e; --ok-soft:#e1f3ef;
+  --warn:#b26b00; --warn-soft:#fdf3e1; --blue:#3b6fd4; --blue-soft:#e8effc;
+  --side:#0b1412; --side2:#13211e; --side-ink:#e6efec; --side-muted:#8ea39c;
+  --r:12px; --sh:0 1px 2px rgba(16,24,22,.05),0 4px 14px rgba(16,24,22,.05);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0c1211; --panel:#141c1a; --ink:#e8efec; --muted:#91a29c; --line:#24302d; --soft:#111917; --sel:#17302a;
+  --accent:#ff6b6f; --accent-soft:#3a1d1e; --ok:#2fb39f; --ok-soft:#123029; --warn:#f0a43a; --warn-soft:#33270f;
+  --blue:#6d9bff; --blue-soft:#17233d; --side:#070c0b; --side2:#0f1816; --sh:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25);
+  color-scheme:dark;
+}}
+html,body{font:14px/1.5 "Inter",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg)}
+.app.fil-mode{height:100vh;grid-template-columns:232px 1fr}
+button{border-radius:9px;border-color:var(--line);background:var(--panel);transition:background .15s,border-color .15s,box-shadow .15s}
+button:hover{border-color:color-mix(in srgb,var(--ok) 40%,var(--line))}
+button.green{background:var(--ok);border-color:var(--ok)}button.green:hover:not(:disabled){background:color-mix(in srgb,var(--ok) 85%,#000);border-color:transparent}
+input,select,textarea{border-radius:9px;border-color:var(--line);background:var(--panel)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent)}
+/* külgriba */
+.side{background:linear-gradient(180deg,var(--side2),var(--side));color:var(--side-ink);padding:6px 10px 12px}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 6px 18px;font-size:16px;letter-spacing:-.01em}
+.brand .logo{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#2fb39f,#0f766e);font-size:18px;box-shadow:0 4px 14px rgba(47,179,159,.35)}
+.brand small{color:var(--side-muted);font-weight:500}
+.side .nav{display:flex;flex-direction:column;gap:2px}
+.side .nav a,.side .nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 12px;border-radius:10px;border:0;background:transparent;color:var(--side-ink);text-decoration:none;font-size:14px}
+.side .nav a:hover,.side .nav button:hover{background:rgba(255,255,255,.06)}
+.side .nav .on{background:rgba(47,179,159,.16);color:#7fe0cf;font-weight:600}
+.side .nav .ic{width:20px;text-align:center}
+.side .navh{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--side-muted);margin:18px 12px 6px}
+.side .foot{margin-top:auto;padding:10px 12px;font-size:12px;color:var(--side-muted)}
+.tabn{background:#2fb39f;color:#04201b}
+/* päis */
+.fil .bhead{position:sticky;top:0;z-index:5;gap:12px;padding:14px 22px;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.fil .bhead h2{font-size:19px;letter-spacing:-.02em;margin:0 8px 0 0}
+.seg{background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:3px;display:inline-flex;gap:2px}
+.seg button{border:0;background:transparent;border-radius:8px;padding:6px 12px;color:var(--muted);font-weight:500}
+.seg button:hover{color:var(--ink);background:var(--panel)}
+.fil .seg button.on{background:var(--panel);color:var(--ink);box-shadow:var(--sh);font-weight:600}
+#filMode button.on{background:var(--ok);color:#fff}
+#filMode button.on.sale{background:var(--accent)}#filMode button.on.receipt{background:var(--blue)}
+.filscan{border-radius:11px;border-width:1.5px;width:280px}
+/* sisu */
+.filmain,.filscroll{padding:18px 22px}
+.filside{background:transparent;border-left:1px solid var(--line);padding:18px 16px}
+table.fil-t{border-radius:var(--r);border-color:var(--line);box-shadow:var(--sh);overflow:hidden}
+table.fil-t th{background:var(--soft);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;padding:10px 12px}
+table.fil-t td{padding:8px 12px;border-color:var(--line)}
+table.fil-t tbody tr:hover td{background:var(--sel)}
+.filimg{width:40px;height:40px;border-radius:10px;background:#fff}
+table.fil-t .im{width:52px}
+.filstat,.filcard,.filbar,.filmv,.filtund{border-radius:var(--r);border-color:var(--line);box-shadow:var(--sh);background:var(--panel)}
+.filstat{padding:14px 18px}
+.filstat b{font-size:24px;letter-spacing:-.02em}
+.filh{color:var(--muted);letter-spacing:.08em}
+.modal .mbox{border-radius:16px}
+.toast{border-radius:12px}
+/* ülevaade */
+.filv.yl{padding:22px;overflow:auto;min-height:0;flex:1}
+.filv.yl.on{display:block}
+.yl .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.yl .kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.yl .kpi .v{font-size:clamp(20px,2vw,26px);white-space:nowrap;padding-right:22px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.yl .kpi .l{font-size:12.5px;color:var(--muted)}
+.yl .kpi .ic{position:absolute;right:12px;top:10px;font-size:16px;opacity:.6}
+.yl .kpi.hi{background:linear-gradient(135deg,#0f766e,#2fb39f);color:#fff;border-color:transparent}
+.yl .kpi.hi .l{color:rgba(255,255,255,.8)}
+.yl .kpi.warnk .v{color:var(--warn)}
+.yl .grid{display:grid;align-items:start;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px}
+.yl .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--sh);min-width:0}
+.yl .card h3{margin:0 0 4px;font-size:15px;letter-spacing:-.01em}
+.yl .card .hint{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+.yl .rows .r{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid var(--line);cursor:pointer}
+.yl .rows .r:first-child{border-top:0}
+.yl .rows .r:hover .n{color:var(--ok)}
+.yl .rows .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.yl .rows .q{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.yl .rows img{width:32px;height:32px;border-radius:8px;object-fit:contain;background:#fff;flex:none}
+.yl .bar{height:6px;border-radius:3px;background:var(--ok-soft);overflow:hidden;width:90px;flex:none}
+.yl .bar i{display:block;height:100%;background:var(--ok);border-radius:3px}
+.yl .chart svg{width:100%;height:220px;display:block}
+.yl .legend{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}
+.yl .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.yl .exp{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.yl .exp input{width:auto}
+.yl .empty2{color:var(--muted);font-size:13px;padding:8px 0}
+.yl .chips{display:flex;flex-wrap:wrap;gap:6px}
+.yl .chip{font-size:12px;padding:3px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent);cursor:pointer}
+@media (max-width:900px){.app.fil-mode{grid-template-columns:1fr}.side{display:none}.filbody{grid-template-columns:1fr}.filside{display:none}.filscan{width:100%}}
+
 </style>
 </head>
 <body>
 <div class="app fil-mode" id="app">
   <aside class="side">
-    <div class="brand">3dmarket ladu<small>ladu.3dmarket.ee</small></div>
-    <div class="tabs"><button id="tabFil" class="on"><span class="ic">🧵</span>Filament <span class="tabn" id="filN"></span></button></div>
-    <a class="lnk" href="/skanner" target="_blank">📱 Telefoni skänner</a>
-    <a class="lnk" href="/logout">Logi välja</a>
+    <div class="brand"><span class="logo">🧵</span><span>3dmarket ladu<small>ladu.3dmarket.ee</small></span></div>
+    <nav class="nav">
+      <button data-v="yl" onclick="filSetView('yl')"><span class="ic">📊</span>Ülevaade</button>
+      <button data-v="laos" onclick="filSetView('laos')"><span class="ic">🧵</span>Laoseis</button>
+      <button data-v="ord" onclick="filSetView('ord')"><span class="ic">🛒</span>Tellimine <span class="tabn" id="filN"></span></button>
+      <button data-v="cart" onclick="filSetView('cart')"><span class="ic">📝</span>Avatud tellimus</button>
+      <button data-v="teel" onclick="filSetView('teel')"><span class="ic">🚚</span>Teel</button>
+      <div class="navh">Tööriistad</div>
+      <a href="/skanner" target="_blank"><span class="ic">📱</span>Telefoni skänner</a>
+      <a href="/api/ladu/laoseis.csv"><span class="ic">⬇</span>Laoseis CSV</a>
+      <a href="/logout"><span class="ic">↩</span>Logi välja</a>
+    </nav>
     <div class="foot" id="foot"></div>
   </aside>
   <section class="fil">
     <div class="bhead"><h2>Filamendi ladu</h2>
-      <div class="seg filviews" id="filViews"><button data-v="laos" class="on">Laoseis</button><button data-v="ord">Tellimine</button><button data-v="cart">Avatud tellimus<span class="tabn" id="foCartN"></span></button><button data-v="teel">Teel<span class="tabn" id="foTeelN"></span></button></div>
+      <div class="seg filviews" id="filViews"><button data-v="yl">Ülevaade</button><button data-v="laos" class="on">Laoseis</button><button data-v="ord">Tellimine</button><button data-v="cart">Avatud tellimus<span class="tabn" id="foCartN"></span></button><button data-v="teel">Teel<span class="tabn" id="foTeelN"></span></button></div>
       <span id="filSum" class="filsum"></span>
       <span class="sp" style="flex:1"></span>
       <div class="seg" id="filMode"><button data-t="inventory" class="on" title="Loendan laos olevaid rulle">Inventuur</button><button data-t="receipt" class="receipt" title="Kaup tuli">Sisse</button><button data-t="sale" class="sale" title="Müük / kulu">Välja</button></div>
@@ -566,6 +666,7 @@ table.debt-t,table.fil-t{border-radius:12px;box-shadow:var(--shadow)}
       <button class="ghost" title="Laadi uuesti" onclick="loadFil(true)">↻</button>
       
     </div>
+    <div class="filv yl" id="filV-yl"></div>
     <div class="filbody filv on" id="filV-laos">
       <div class="filmain">
         <div class="filtools">
@@ -620,7 +721,7 @@ table.debt-t,table.fil-t{border-radius:12px;box-shadow:var(--shadow)}
 <div class="modal" id="modal"><div class="mwrap"><button class="mclose" onclick="closeModal()" title="Sulge (Esc)">✕</button><div class="mbox" id="mbox"></div></div></div>
 <div class="toast" id="toast"></div>
 <script>
-// Tehtud skriptiga tee_ladu_html.py Postikeskkonna index.html-ist (Filament-vaade). Ära muuda käsitsi.
+// Tehtud skriptiga tee_ladu_html.py Postikeskkonna index.html-ist (Filament-vaade) + web/ylevaade.js. Ära muuda käsitsi.
 const S = {folder:'INBOX', filter:'koik', page:0, pages:1, cur:null, info:{}, orders:[], msg:null};
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1167,10 +1268,78 @@ async function foMmSave(sku){
 }
 
 
+/* ladu.3dmarket.ee: Ülevaade (ainult veebis). */
+const _filSetView0 = filSetView;
+filSetView = function(v){
+  const on = v === 'yl';
+  $('filV-yl').classList.toggle('on', on);
+  document.querySelectorAll('.side .nav [data-v]').forEach(b=>b.classList.toggle('on', b.dataset.v === v));
+  if (on) {
+    S.filView = 'yl';
+    document.querySelectorAll('#filViews button').forEach(b=>b.classList.toggle('on', b.dataset.v === 'yl'));
+    ['laos','ord','cart','teel'].forEach(x=>$('filV-'+x).classList.remove('on'));
+    document.querySelector('section.fil').classList.add('notlaos');
+    loadYl(); return;
+  }
+  _filSetView0(v);
+};
+const ylNimi = sku => (S.fil.by[sku] || {}).nimi || sku;
+const ylPilt = sku => { const p = (S.fil.by[sku] || {}).pilt; return p ? `<img loading="lazy" src="/api/filament/pilt?p=${encodeURIComponent(p)}" onerror="this.style.visibility='hidden'">` : '<img style="visibility:hidden">'; };
+const ylKuu = m => ['jaan','veebr','märts','apr','mai','juuni','juuli','aug','sept','okt','nov','dets'][parseInt(m.slice(5,7))-1];
+const ylN = n => Number(n||0).toLocaleString('et-EE');
+
+function ylChart(kuud){
+  const W = 640, H = 220, P = 26, max = Math.max(1, ...kuud.map(k => Math.max(k.sale, k.receipt)));
+  const bw = (W - P) / kuud.length, b = Math.max(4, bw/2 - 5);
+  let g = '';
+  for (let i = 0; i <= 4; i++) { const y = 10 + (H-40) * i/4; g += `<line x1="${P}" x2="${W}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${P-6}" y="${y+4}" text-anchor="end" font-size="10" fill="var(--muted)">${Math.round(max*(1-i/4))}</text>`; }
+  kuud.forEach((k, i) => {
+    const x = P + i*bw + bw/2, hs = (H-40)*k.sale/max, hr = (H-40)*k.receipt/max;
+    g += `<rect x="${x-b-1}" y="${H-30-hs}" width="${b}" height="${hs}" rx="3" fill="var(--ok)"><title>${k.kuu}: välja ${k.sale}</title></rect>`;
+    g += `<rect x="${x+1}" y="${H-30-hr}" width="${b}" height="${hr}" rx="3" fill="var(--blue)" opacity=".55"><title>${k.kuu}: sisse ${k.receipt}</title></rect>`;
+    g += `<text x="${x}" y="${H-12}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${ylKuu(k.kuu)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${g}</svg>`;
+}
+
+async function loadYl(){
+  const el = $('filV-yl');
+  if (!el.dataset.ok) el.innerHTML = '<div class="empty">Laen…</div>';
+  await guard(async()=>{
+    if (!S.fil.kat) await loadFil(false, true);
+    const j = await api('/api/ladu/ylevaade');
+    if (!S.fo.loaded) { try { await loadFo(false, true); } catch(e){} }
+    const sug = parseInt(($('filN') || {}).textContent) || 0, teel = (S.fo.tell || []).filter(o => o.staatus === 'ordered').reduce((a, o) => a + (o.kogus || 0), 0);
+    const maxTop = Math.max(1, ...j.top.map(t => t.q));
+    el.dataset.ok = 1;
+    el.innerHTML = `
+      <div class="kpis">
+        <div class="kpi hi"><span class="ic">🧵</span><div class="v">${ylN(j.rulle)}</div><div class="l">rulli laos · ${ylN(j.tooteid)} toodet</div></div>
+        <div class="kpi"><span class="ic">💶</span><div class="v">${fmtE(j.vaartus)} €</div><div class="l">laoväärtus ostuhinnas, km-ta</div></div>
+        <div class="kpi"><span class="ic">📦</span><div class="v">${ylN(j.myyk30)}</div><div class="l">rulli välja 30 päevaga (${fmtE(j.myyk30_eur)} € ostuhinnas)</div></div>
+        <div class="kpi ${sug ? 'warnk' : ''}" style="cursor:pointer" onclick="filSetView('ord')"><span class="ic">🛒</span><div class="v">${sug}</div><div class="l">toodet vaja tellida →</div></div>
+        <div class="kpi" style="cursor:pointer" onclick="filSetView('teel')"><span class="ic">🚚</span><div class="v">${teel}</div><div class="l">rulli teel →</div></div>
+        <div class="kpi"><span class="ic">⚡</span><div class="v">${ylN(j.tana_kandeid)}</div><div class="l">kannet täna · ${ylN(j.tana_myyk)} välja</div></div>
+      </div>
+      <div class="grid">
+        <div class="card chart"><h3>Liikumine kuude kaupa</h3><div class="hint">Rullid, viimased 12 kuud</div>${ylChart(j.kuud)}
+          <div class="legend"><span><i style="background:var(--ok)"></i>Välja (müük)</span><span><i style="background:var(--blue);opacity:.55"></i>Sisse (tarnijalt)</span></div></div>
+        <div class="card"><h3>Enim müüdud</h3><div class="hint">Viimased 30 päeva</div><div class="rows">${j.top.length ? j.top.map(t => `
+          <div class="r" onclick="filCard('${esc(t.sku)}')">${ylPilt(t.sku)}<span class="n">${esc(ylNimi(t.sku))}</span><span class="bar"><i style="width:${Math.round(100*t.q/maxTop)}%"></i></span><span class="q">${t.q}</span><span class="sub" style="width:58px;text-align:right">laos ${t.laos}</span></div>`).join('') : '<div class="empty2">Müüke veel pole.</div>'}</div></div>
+        <div class="card"><h3>Seisev kaup</h3><div class="hint">Laos, aga 90 päeva jooksul pole müüdud. Kõige suurema väärtusega ees: kaalu allahindlust.</div><div class="rows">${j.seisev.length ? j.seisev.map(t => `
+          <div class="r" onclick="filCard('${esc(t.sku)}')">${ylPilt(t.sku)}<span class="n">${esc(ylNimi(t.sku))}</span><span class="q">${t.laos} tk</span><span class="sub" style="width:76px;text-align:right">${fmtE(t.vaartus)} €</span></div>`).join('') : '<div class="empty2">Seisvat kaupa pole.</div>'}</div></div>
+        <div class="card"><h3>Aruanded</h3><div class="hint">Laoseis Excelisse või raamatupidamisele (SimplBooks). Vali kuupäev, kui vajad seisu kindla päeva lõpu seisuga, näiteks 31.12 inventuuriks.</div>
+          <div class="exp"><input type="date" id="ylKp"><button class="green" onclick="location.href='/api/ladu/laoseis.csv'+($('ylKp').value?'?kuupaev='+$('ylKp').value:'')">⬇ Laoseis CSV</button></div>
+          ${j.negatiivsed.length ? `<div style="margin-top:16px"><h3>Kontrolli üle</h3><div class="hint">Nende toodete laoseis on miinuses, ilmselt on sisse-kanne puudu.</div><div class="chips">${j.negatiivsed.map(t => `<span class="chip" onclick="filCard('${esc(t.sku)}')">${esc(ylNimi(t.sku))}: ${t.laos}</span>`).join('')}</div></div>` : ''}
+          <div class="hint" style="margin-top:16px">Andmebaasist tehakse iga päev automaatne varukoopia (alles 30 päeva).</div></div>
+      </div>`;
+  });
+}
+
 document.addEventListener('keydown', e=>{ if (e.key==='Escape'){ closeModal(); } });
 function setMode(){}
 api('/api/tervis').then(j=>{ $('foot').textContent = 'Versioon ' + (j.versioon||''); }).catch(()=>{});
-loadFil(); setTimeout(()=>loadFo(false, true), 1500);
+loadFil(false, true).then(()=>filSetView('yl'));
 </script>
 </body>
 </html>

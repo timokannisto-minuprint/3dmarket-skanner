@@ -33,28 +33,40 @@ def tee(src):
         i = fil.index('<a class="ghost filweb"'); fil = fil[:i] + fil[fil.index("</a>", i) + 4:]
     fil = fil.replace("Telefon samas võrgus saadab iga skänni kohe siia.", "Telefon saadab iga skänni kohe lattu (töötab igal pool, kus on internet).")
 
-    lisa_css = """
-<style>
-.app.fil-mode{height:100vh}
-.side .brand small{display:block}
-.side .lnk{display:block;padding:8px 12px;border-radius:8px;color:inherit;text-decoration:none;margin:2px 0}
-.side .lnk:hover{background:rgba(127,127,127,.12)}
-</style>"""
+    teema = open(os.path.join(HERE, "web", "teema.css"), encoding="utf-8").read()
+    ylevaade = open(os.path.join(HERE, "web", "ylevaade.js"), encoding="utf-8").read()
+    # Ülevaade vaade (ainult veebis): nupp vaadete reale ja oma paneel
+    fil = fil.replace('<div class="seg filviews" id="filViews">', '<div class="seg filviews" id="filViews"><button data-v="yl">Ülevaade</button>', 1)
+    fil = fil.replace('<div class="filbody filv on" id="filV-laos">', '<div class="filv yl" id="filV-yl"></div>\n    <div class="filbody filv on" id="filV-laos">', 1)
     html = f"""<!doctype html>
 <html lang="et">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>3dmarket ladu</title>
-{css}{lisa_css}
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧵</text></svg>">
+{css}
+<style>
+{teema}
+</style>
 </head>
 <body>
 <div class="app fil-mode" id="app">
   <aside class="side">
-    <div class="brand">3dmarket ladu<small>ladu.3dmarket.ee</small></div>
-    <div class="tabs"><button id="tabFil" class="on"><span class="ic">🧵</span>Filament <span class="tabn" id="filN"></span></button></div>
-    <a class="lnk" href="/skanner" target="_blank">📱 Telefoni skänner</a>
-    <a class="lnk" href="/logout">Logi välja</a>
+    <div class="brand"><span class="logo">🧵</span><span>3dmarket ladu<small>ladu.3dmarket.ee</small></span></div>
+    <nav class="nav">
+      <button data-v="yl" onclick="filSetView('yl')"><span class="ic">📊</span>Ülevaade</button>
+      <button data-v="laos" onclick="filSetView('laos')"><span class="ic">🧵</span>Laoseis</button>
+      <button data-v="ord" onclick="filSetView('ord')"><span class="ic">🛒</span>Tellimine <span class="tabn" id="filN"></span></button>
+      <button data-v="cart" onclick="filSetView('cart')"><span class="ic">📝</span>Avatud tellimus</button>
+      <button data-v="teel" onclick="filSetView('teel')"><span class="ic">🚚</span>Teel</button>
+      <div class="navh">Tööriistad</div>
+      <a href="/skanner" target="_blank"><span class="ic">📱</span>Telefoni skänner</a>
+      <a href="/api/ladu/laoseis.csv"><span class="ic">⬇</span>Laoseis CSV</a>
+      <a href="/logout"><span class="ic">↩</span>Logi välja</a>
+    </nav>
     <div class="foot" id="foot"></div>
   </aside>
   {fil}
@@ -62,14 +74,15 @@ def tee(src):
 <div class="modal" id="modal"><div class="mwrap"><button class="mclose" onclick="closeModal()" title="Sulge (Esc)">✕</button><div class="mbox" id="mbox"></div></div></div>
 <div class="toast" id="toast"></div>
 <script>
-// Tehtud skriptiga tee_ladu_html.py Postikeskkonna index.html-ist (Filament-vaade). Ära muuda käsitsi.
+// Tehtud skriptiga tee_ladu_html.py Postikeskkonna index.html-ist (Filament-vaade) + web/ylevaade.js. Ära muuda käsitsi.
 {abi}
 {modal}
 {js}
+{ylevaade}
 document.addEventListener('keydown', e=>{{ if (e.key==='Escape'){{ closeModal(); }} }});
 function setMode(){{}}
 api('/api/tervis').then(j=>{{ $('foot').textContent = 'Versioon ' + (j.versioon||''); }}).catch(()=>{{}});
-loadFil(); setTimeout(()=>loadFo(false, true), 1500);
+loadFil(false, true).then(()=>filSetView('yl'));
 </script>
 </body>
 </html>
