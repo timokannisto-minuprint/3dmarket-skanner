@@ -12,6 +12,7 @@ ladu.3dmarket.ee – 3dmarketi laoserver (filamendid, hiljem ka muud poe tooted)
 Keskkonnamuutujad (PM2 ecosystem.config.js):
   LADU_VOTI        Postikeskkonna võti (pikk juhuslik)
   TEL_VOTI         telefoni võti (QR-koodis)
+  POOD_VOTI        e-poe võti (ainult GET /api/pood/laoseis)
   LADU_ANDMED      andmekaust (vaikimisi ./andmed): ladu.db, kataloog.csv, skanner/*.json, arved/*.csv, pildid/
   LADU_PAROOL_RASI veebi sisselogimise parooli räsi (python app.py --parool)
   LADU_SALADUS     sessiooniküpsise allkirjavõti (vaikimisi tuletatakse LADU_VOTI-st)
@@ -33,6 +34,7 @@ DB_PATH = os.path.join(ANDMED, "ladu.db")
 LADU_URL = (os.environ.get("LADU_URL") or "https://ladu.3dmarket.ee").rstrip("/")
 LADU_VOTI = os.environ.get("LADU_VOTI", "")
 TEL_VOTI = os.environ.get("TEL_VOTI", "")
+POOD_VOTI = os.environ.get("POOD_VOTI", "")   # e-pood: ainult laoseisu lugemine
 FIL_TABELID = ("filament_liikumine", "filament_kood", "filament_tellimus", "filament_seade", "filament_tundmatu")
 _NOW_TS = "((julianday('now') - 2440587.5) * 86400.0)"
 # failid, mida Postikeskkond (või Claude) võib üles laadida
@@ -113,6 +115,8 @@ def _vordle(a, b):
 def _luba():
     p = request.path
     if p in AVALIK:
+        return
+    if p.startswith("/api/pood/") and request.method == "GET" and _vordle(request.headers.get("X-Pood-Voti", ""), POOD_VOTI):
         return
     if session.get("sees"):   # veebis sisse loginud (laohalduse leht)
         return
@@ -285,6 +289,30 @@ def tel_tagasi():
         n = c.execute("DELETE FROM filament_liikumine WHERE guid=?", (gid,)).rowcount
         n += c.execute("DELETE FROM filament_tundmatu WHERE guid=?", (gid,)).rowcount
     return ok(kustutatud=n)
+
+
+# ---------------------------------------------------------------- e-pood (ainult lugemine)
+@app.get("/api/pood/laoseis")
+def pood_laoseis():
+    """Laoseis poele: {sku: {laos, teel, eta}} + aeg. Ainult tooted, millel on laos või teel midagi
+    (?koik=1 -> kõik kataloogi tooted). teel/eta tulevad teel olevatest tellimustest."""
+    k = filament.kataloog()
+    with db() as c:
+        laos = filament._laoseis(c)
+        teel, eta = {}, {}
+        for r in c.execute("SELECT read, eta FROM filament_tellimus WHERE staatus='ordered'"):
+            try:
+                read = json.loads(r["read"] or "{}")
+            except ValueError:
+                read = {}
+            for sku, q in read.items():
+                teel[sku] = teel.get(sku, 0) + int(q or 0)
+                if r["eta"] and (sku not in eta or r["eta"] < eta[sku]):
+                    eta[sku] = r["eta"]
+    skud = k["by_sku"].keys() if request.args.get("koik") else set(laos) | set(teel)
+    out = {s: {"laos": max(0, laos.get(s, 0)), "teel": teel.get(s, 0), "eta": eta.get(s, "")}
+           for s in skud if s in k["by_sku"]}
+    return ok(laoseis=out, aeg=filament._aeg())
 
 
 # ---------------------------------------------------------------- andmefailid (kataloog, hinnad, arved) Postikeskkonnast
