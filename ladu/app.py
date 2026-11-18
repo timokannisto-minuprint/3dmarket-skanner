@@ -12,7 +12,7 @@ ladu.3dmarket.ee – 3dmarketi laoserver (filamendid, hiljem ka muud poe tooted)
 Keskkonnamuutujad (PM2 ecosystem.config.js):
   LADU_VOTI        Postikeskkonna võti (pikk juhuslik)
   TEL_VOTI         telefoni võti (QR-koodis)
-  POOD_VOTI        e-poe võti (ainult GET /api/pood/laoseis)
+  POOD_VOTI        e-poe võti (GET /api/pood/laoseis, POST /api/pood/myyk)
   LADU_ANDMED      andmekaust (vaikimisi ./andmed): ladu.db, kataloog.csv, skanner/*.json, arved/*.csv, pildid/
   LADU_PAROOL_RASI veebi sisselogimise parooli räsi (python app.py --parool)
   LADU_SALADUS     sessiooniküpsise allkirjavõti (vaikimisi tuletatakse LADU_VOTI-st)
@@ -116,7 +116,7 @@ def _luba():
     p = request.path
     if p in AVALIK:
         return
-    if p.startswith("/api/pood/") and request.method == "GET" and _vordle(request.headers.get("X-Pood-Voti", ""), POOD_VOTI):
+    if (p == "/api/pood/laoseis" and request.method == "GET" or p == "/api/pood/myyk" and request.method == "POST") and _vordle(request.headers.get("X-Pood-Voti", ""), POOD_VOTI):
         return
     if session.get("sees"):   # veebis sisse loginud (laohalduse leht)
         return
@@ -313,6 +313,38 @@ def pood_laoseis():
     out = {s: {"laos": max(0, laos.get(s, 0)), "teel": teel.get(s, 0), "eta": eta.get(s, "")}
            for s in skud if s in k["by_sku"]}
     return ok(laoseis=out, aeg=filament._aeg())
+
+
+@app.post("/api/pood/myyk")
+def pood_myyk():
+    """Makstud poetellimus -> 'Välja' kanded. {"tellimus": "1234", "read": {"FG-P1-E1": 2}}.
+    Korduv sama tellimuse numbriga saatmine on ohutu (guid pood-<tellimus>-<sku>)."""
+    j = request.get_json(silent=True) or {}
+    nr = "".join(ch for ch in str(j.get("tellimus") or "") if ch.isalnum() or ch in "-_")[:40]
+    read = j.get("read") or {}
+    if not nr or not isinstance(read, dict) or not read:
+        abort(400, "Tellimuse number või read puuduvad.")
+    k = filament.kataloog()["by_sku"]
+    tundmatud = [s for s in read if s not in k]
+    if tundmatud:
+        abort(400, "Tundmatud tooted: " + ", ".join(map(str, tundmatud[:10])))
+    lisatud, olemas = {}, {}
+    with db() as c:
+        for sku, q in read.items():
+            try:
+                q = int(q)
+            except (TypeError, ValueError):
+                abort(400, f"Vigane kogus: {sku}")
+            if q <= 0:
+                continue
+            g = f"pood-{nr}-{sku}"
+            if c.execute("SELECT 1 FROM filament_liikumine WHERE guid=?", (g,)).fetchone():
+                olemas[sku] = q
+                continue
+            filament._lisa(c, sku, q, "sale", k[sku].get("ean") or "", f"E-pood tellimus {nr}", None, "pood", g)
+            lisatud[sku] = q
+        laos = filament._laoseis(c)
+    return ok(tellimus=nr, lisatud=lisatud, juba_olemas=olemas, laos={s: laos.get(s, 0) for s in read})
 
 
 # ---------------------------------------------------------------- andmefailid (kataloog, hinnad, arved) Postikeskkonnast

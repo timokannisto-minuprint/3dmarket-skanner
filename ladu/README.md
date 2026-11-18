@@ -31,4 +31,5 @@ Uuendamine: `cd ladu && git pull && pm2 restart ladu`.
 - `/api/nimed`, `/api/kanne`, `/api/tagasi` – telefoni skänner
 - `GET /api/ladu/olek`, `GET /api/ladu/eksport` (kogu andmebaas JSON-ina), `GET /api/ladu/failid`, `PUT /api/ladu/fail?nimi=…`, `POST /api/ladu/import`
 - `GET /api/pood/laoseis` – e-poele (päis `X-Pood-Voti`): `{laoseis: {sku: {laos, teel, eta}}, aeg}`; `?koik=1` kõik tooted
+- `POST /api/pood/myyk` – e-poe makstud tellimus (päis `X-Pood-Voti`): `{"tellimus": "1234", "read": {"FG-P1-E1": 2}}` → Välja-kanded, korduv saatmine ohutu
 - `GET /api/tervis` – avalik
