@@ -4,7 +4,8 @@ filament.py – Postikeskkonna vahekaart 🧵 Filament, v108: andmed elavad laos
 
 Postikeskkond on nüüd ainult klient: kõik /api/filament/* päringud suunatakse laoserverisse (reaalajas, kohalikku
 koopiat ei hoita). index.html ei pidanud muutuma. Kohapeale jäävad ainult:
-  - tootepildid (<filament_kaust>/pildid, /api/filament/pilt), et laoserverisse ei peaks sadu MB pilte laadima;
+  - tootepildid näidatakse kohalikust kaustast (<filament_kaust>/pildid, kiirem); puuduvad pildid laaditakse taustal
+    ka laoserverisse, et ladu.3dmarket.ee veebileht neid näitaks;
   - andmefailide üleslaadimine: kataloog.csv, skanner/*.json ja arved/*.csv saadetakse laoserverisse, kui need
     Dropboxis muutuvad (Claude uuendab neid seal).
 Esimesel käivitusel, kui laoserver on tühi, viiakse siinsed filament_* tabelid sinna üle (üks kord).
@@ -35,7 +36,9 @@ def init(app, db, ok, now, sync_tables, K=None):
         sync_tables.pop(t, None)
     app.register_blueprint(bp)
     if os.path.basename(sys.argv[0] or "").lower().startswith("postikeskkond"):
-        threading.Timer(3, _taust).start()
+        t = threading.Timer(3, _taust)
+        t.daemon = True
+        t.start()
 
 
 def schema(c):   # vanad tabelid jäävad alles (varukoopia); uusi andmeid siia ei kirjutata
@@ -201,6 +204,28 @@ def _import():
     print("  🧵 Filamendi andmed viidi laoserverisse:", r.text[:300])
 
 
+PILDI_LAIENDID = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def _laadi_pildid():
+    """Saadab laoserverisse pildid, mida seal veel pole (või mille suurus erineb)."""
+    base = os.path.join(kaust(), "pildid")
+    server = _kysi("GET", "/api/ladu/pildid", timeout=60).json().get("pildid") or {}
+    n = 0
+    for root, _, files in os.walk(base):
+        for f in files:
+            p = os.path.join(root, f)
+            rel = os.path.relpath(p, kaust()).replace(os.sep, "/")
+            if not f.lower().endswith(PILDI_LAIENDID) or server.get(rel) == os.path.getsize(p):
+                continue
+            with open(p, "rb") as fh:
+                r = _kysi("PUT", "/api/ladu/fail", timeout=120, params={"nimi": rel}, data=fh.read(),
+                          headers={"Content-Type": "application/octet-stream"})
+            if r.ok:
+                n += 1
+    OLEK["pildid"] = f"{n} uut pilti saadetud ({time.strftime('%H:%M')})"
+
+
 def _taust():
     try:
         _import()
@@ -208,3 +233,9 @@ def _taust():
         OLEK["import"] = f"viga: {e}"
         print("  🧵 Laoserverisse üleviimine ebaõnnestus:", e)
     _laadi_failid(sunni=True)
+    while True:   # pildid: kohe ja siis kord tunnis
+        try:
+            _laadi_pildid()
+        except Exception as e:
+            OLEK["pildid"] = f"viga: {e}"
+        time.sleep(3600)

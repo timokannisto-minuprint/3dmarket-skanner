@@ -3,10 +3,11 @@
 Filamentide (ja hiljem muude poe toodete) laoseis, tellimine ja telefoni kaamera-skänner. Üks andmebaas, mida kasutavad:
 
 - **Postikeskkond** (vahekaart 🧵 Filament): `postikeskkond/filament.py` suunab kõik `/api/filament/*` päringud siia (päis `X-Ladu-Voti`). Seaded failis `ladu.json` Postikeskkonna kaustas: `{"url": "https://ladu.3dmarket.ee", "voti": "…"}`.
-- **Telefoni skänner**: `https://ladu.3dmarket.ee/#k=<TEL_VOTI>` (QR-kood Postikeskkonnas: Filament → 📱 Telefon).
+- **Veebi laohaldus**: `https://ladu.3dmarket.ee` (parooliga sisselogimine, sama Filament-vaade mis Postikeskkonnas; leht `static/ladu.html` tehakse skriptiga `tee_ladu_html.py` Postikeskkonna index.html-ist).
+- **Telefoni skänner**: `https://ladu.3dmarket.ee/skanner#k=<TEL_VOTI>` (QR-kood Postikeskkonnas: Filament → 📱 Telefon).
 - hiljem uus pood ja SimplBooksi arved.
 
-Andmed: SQLite `LADU_ANDMED/ladu.db` (kanded `filament_liikumine`, laoseis = summa), kataloog ja hinnafailid samas kaustas (Postikeskkond laeb need Dropboxist üles, kui muutuvad). Pilte serveris pole, Postikeskkond näitab neid Dropboxist.
+Andmed: SQLite `LADU_ANDMED/ladu.db` (kanded `filament_liikumine`, laoseis = summa), kataloog ja hinnafailid samas kaustas (Postikeskkond laeb need Dropboxist üles, kui muutuvad). Tootepildid laeb Postikeskkond taustal üles (`pildid/`, ainult puuduvad).
 
 ## Paigaldus veebimajutuses (Elkdata, pakett Tee-ise-veeb Premium)
 

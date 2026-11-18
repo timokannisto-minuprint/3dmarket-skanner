@@ -13,13 +13,15 @@ Keskkonnamuutujad (PM2 ecosystem.config.js):
   LADU_VOTI        Postikeskkonna võti (pikk juhuslik)
   TEL_VOTI         telefoni võti (QR-koodis)
   LADU_ANDMED      andmekaust (vaikimisi ./andmed): ladu.db, kataloog.csv, skanner/*.json, arved/*.csv, pildid/
+  LADU_PAROOL_RASI veebi sisselogimise parooli räsi (python app.py --parool)
+  LADU_SALADUS     sessiooniküpsise allkirjavõti (vaikimisi tuletatakse LADU_VOTI-st)
   LADU_URL         avalik aadress (vaikimisi https://ladu.3dmarket.ee)
   SMARTPRINT_USER / SMARTPRINT_PASS   tarnija B2B portaal (Teel -> Näita arveid)
   PORT             (vaikimisi 3000), ELKDATA_APP_IP = kuulamise aadress (veebimajutus annab ise)
 """
-import datetime as dt, hashlib, json, os, secrets, sqlite3, sys, traceback
+import datetime as dt, hashlib, json, os, secrets, sqlite3, sys, threading, time, traceback
 
-from flask import Flask, jsonify, request, send_from_directory, abort
+from flask import Flask, jsonify, request, send_from_directory, abort, session, redirect
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -40,7 +42,12 @@ os.makedirs(os.path.join(ANDMED, "skanner"), exist_ok=True)
 os.makedirs(os.path.join(ANDMED, "arved"), exist_ok=True)
 
 app = Flask(__name__, static_folder=None)
-app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024
+app.config.update(
+    MAX_CONTENT_LENGTH=32 * 1024 * 1024,
+    SECRET_KEY=os.environ.get("LADU_SALADUS") or hashlib.sha256(("ladu-sessioon:" + LADU_VOTI).encode()).hexdigest(),
+    SESSION_COOKIE_NAME="ladu", SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Strict",
+    SESSION_COOKIE_SECURE=LADU_URL.startswith("https"), PERMANENT_SESSION_LIFETIME=dt.timedelta(days=30))
+PAROOL_RASI = os.environ.get("LADU_PAROOL_RASI", "")
 
 
 # ---------------------------------------------------------------- andmebaas
@@ -90,11 +97,11 @@ def now():
 
 filament.init(app, db, ok, now, {}, {"filament_kaust": ANDMED})
 if TEL_VOTI:
-    filament.TELEFON.update(skanner=f"{LADU_URL}/#k={TEL_VOTI}", juhend=f"{LADU_URL}/#k={TEL_VOTI}", ip=LADU_URL)
+    filament.TELEFON.update(skanner=f"{LADU_URL}/skanner#k={TEL_VOTI}", juhend=f"{LADU_URL}/skanner#k={TEL_VOTI}", ip=LADU_URL)
 
 
 # ---------------------------------------------------------------- ligipääs
-AVALIK = {"/", "/zxing.min.js", "/manifest.json", "/api/tervis"}
+AVALIK = {"/", "/skanner", "/login", "/logout", "/zxing.min.js", "/api/tervis"}
 TELEFONI_TEED = {"/api/nimed", "/api/kanne", "/api/tagasi", "/api/tere"}
 
 
@@ -106,6 +113,8 @@ def _vordle(a, b):
 def _luba():
     p = request.path
     if p in AVALIK:
+        return
+    if session.get("sees"):   # veebis sisse loginud (laohalduse leht)
         return
     if p in TELEFONI_TEED:
         if _vordle(request.headers.get("X-Voti", ""), TEL_VOTI) or _vordle(request.headers.get("X-Ladu-Voti", ""), LADU_VOTI):
@@ -132,8 +141,70 @@ def _viga(e):
     return jsonify({"ok": False, "viga": msg or str(e)}), code
 
 
-# ---------------------------------------------------------------- telefoni skänner (sama leht mis Postikeskkonna v107)
+# ---------------------------------------------------------------- veebi laohaldus + sisselogimine
+_KATSED = {}   # ip -> [aeg, ...] ebaõnnestunud sisselogimised
+_KATSED_LUKK = threading.Lock()
+
+LOGIN_HTML = """<!doctype html><html lang="et"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3dmarket ladu</title><style>
+:root{--bg:#f4f6f5;--fg:#17201d;--card:#fff;--line:#d9dfdc;--accent:#0f6b5c;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1110;--fg:#eef3f1;--card:#141c1a;--line:#26302e;--accent:#3fb59e;--bad:#ff7a66}}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:16px/1.4 -apple-system,system-ui,"Segoe UI",sans-serif;padding:16px;box-sizing:border-box}
+form{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px;width:100%;max-width:340px;box-sizing:border-box}
+h1{font-size:20px;margin:0 0 4px}p{margin:0 0 18px;opacity:.7;font-size:14px}
+input{width:100%;box-sizing:border-box;padding:12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;font:inherit;margin-bottom:12px}
+button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--accent);color:#fff;font:600 16px inherit;cursor:pointer}
+.v{color:var(--bad);font-size:14px;margin:0 0 12px}</style></head><body>
+<form method="post" action="/login"><h1>3dmarket ladu</h1><p>Filamentide laohaldus</p>%VIGA%
+<input type="password" name="parool" placeholder="Parool" autofocus autocomplete="current-password" required>
+<button>Logi sisse</button></form></body></html>"""
+
+
+def _ip():
+    return (request.headers.get("X-Forwarded-For") or request.remote_addr or "").split(",")[0].strip()
+
+
 @app.get("/")
+def leht():
+    if not session.get("sees"):
+        return redirect("/login")
+    return send_from_directory(os.path.join(HERE, "static"), "ladu.html", max_age=0)
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    viga = ""
+    if request.method == "POST":
+        from werkzeug.security import check_password_hash
+        ip, nyyd = _ip(), time.time()
+        with _KATSED_LUKK:
+            k = [t for t in _KATSED.get(ip, []) if nyyd - t < 900]
+            _KATSED[ip] = k
+        if len(k) >= 10:
+            viga = "Liiga palju valesid katseid. Proovi 15 minuti pärast uuesti."
+        elif PAROOL_RASI and check_password_hash(PAROOL_RASI, request.form.get("parool", "")):
+            session.clear()
+            session.permanent = True
+            session["sees"] = True
+            _logi(f"veebi sisselogimine {ip}")
+            return redirect("/")
+        else:
+            time.sleep(1)
+            with _KATSED_LUKK:
+                _KATSED.setdefault(ip, []).append(nyyd)
+            viga = "Vale parool." if PAROOL_RASI else "Parool on serveris seadistamata."
+    html = LOGIN_HTML.replace("%VIGA%", f'<div class="v">{viga}</div>' if viga else "")
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
+@app.get("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+
+# ---------------------------------------------------------------- telefoni skänner (sama leht mis Postikeskkonna v107)
+@app.get("/skanner")
 def tel_leht():
     return send_from_directory(os.path.join(HERE, "static"), "skanner.html", max_age=0)
 
@@ -217,13 +288,37 @@ def tel_tagasi():
 
 
 # ---------------------------------------------------------------- andmefailid (kataloog, hinnad, arved) Postikeskkonnast
+PILDI_LAIENDID = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def _pilt_ok(nimi):
+    osad = nimi.split("/")
+    return (osad[0] == "pildid" and 2 <= len(osad) <= 3 and nimi.lower().endswith(PILDI_LAIENDID)
+            and all(o and o not in (".", "..") and all(ch.isalnum() or ch in "-_." for ch in o) for o in osad))
+
+
 def _faili_tee(nimi):
     nimi = (nimi or "").replace("\\", "/").strip("/")
     ok_nimi = nimi in LUBATUD_FAILID or (nimi.startswith("arved/") and nimi.lower().endswith(".csv") and "/" not in nimi[6:]
-                                         and ".." not in nimi and len(nimi) < 120)
+                                         and ".." not in nimi and len(nimi) < 120) or _pilt_ok(nimi)
     if not ok_nimi:
         abort(400, "Seda faili ei saa üles laadida.")
-    return os.path.join(ANDMED, *nimi.split("/"))
+    p = os.path.join(ANDMED, *nimi.split("/"))
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    return p
+
+
+@app.get("/api/ladu/pildid")
+def ladu_pildid():
+    """Serveris olevad tootepildid: suhteline tee -> suurus (Postikeskkond laeb puuduvad üles)."""
+    base = os.path.join(ANDMED, "pildid")
+    out = {}
+    for root, _, files in os.walk(base):
+        for f in files:
+            if f.lower().endswith(PILDI_LAIENDID):
+                p = os.path.join(root, f)
+                out[os.path.relpath(p, ANDMED).replace(os.sep, "/")] = os.path.getsize(p)
+    return ok(pildid=out)
 
 
 def _sha(p):
@@ -254,7 +349,8 @@ def ladu_fail():
     with open(tmp, "wb") as fh:
         fh.write(data)
     os.replace(tmp, p)
-    _logi(f"fail {request.args.get('nimi')} {len(data)} B ({filament._arvuti()})")
+    if not _pilt_ok(request.args.get("nimi") or ""):
+        _logi(f"fail {request.args.get('nimi')} {len(data)} B ({filament._arvuti()})")
     return ok(sha=_sha(p))
 
 
@@ -310,6 +406,12 @@ def ladu_eksport():
 
 
 init_db()
+
+if __name__ == "__main__" and "--parool" in sys.argv:   # python app.py --parool  -> prindib räsi LADU_PAROOL_RASI jaoks
+    import getpass
+    from werkzeug.security import generate_password_hash
+    print(generate_password_hash(getpass.getpass("Uus parool: ")))
+    sys.exit(0)
 
 if __name__ == "__main__":
     host = os.environ.get("ELKDATA_APP_IP") or "127.0.0.1"

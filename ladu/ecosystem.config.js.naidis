@@ -12,6 +12,8 @@ module.exports = {
       LADU_ANDMED: "/www/apache/domains/www.3dmarket.ee/ladu-andmed",
       LADU_VOTI: "<pikk juhuslik võti, sama mis Postikeskkonna ladu.json-is>",
       TEL_VOTI: "<telefoni võti>",
+      LADU_PAROOL_RASI: "<python app.py --parool väljund>",
+      LADU_SALADUS: "<pikk juhuslik hex>",
       SMARTPRINT_USER: "",
       SMARTPRINT_PASS: ""
     },

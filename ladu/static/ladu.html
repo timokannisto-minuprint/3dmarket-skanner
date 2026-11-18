@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3dmarket ladu</title>
+<style>
+:root{
+  --bg:#f4f2ee; --panel:#ffffff; --ink:#1d1d1b; --muted:#6f6b63; --line:#e3dfd7; --soft:#f9f8f5;
+  --accent:#d2462f; --accent-ink:#fff; --accent-soft:#fbe9e5; --ok:#2f7d4f; --ok-soft:#e5f2ea;
+  --warn:#a86a00; --warn-soft:#fbf0d9; --blue:#2c5d9b; --blue-soft:#e6eef8; --sel:#fff4e0;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI",system-ui,-apple-system,sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel);border-radius:7px;padding:6px 11px}
+button:hover{border-color:#c9c3b8}
+button.green{background:#2e9e4f;border-color:#2e9e4f;color:#fff;font-weight:600}button.green:hover:not(:disabled){background:#268543;border-color:#268543}button.green:disabled{opacity:.5}
+button.folder{background:#f4c542;border-color:#ddb02c;color:#3a2e00;font-weight:600}button.folder:hover:not(:disabled){background:#ebb92e;border-color:#c99d1f}
+button.t-ai{background:#f1ecfb;border-color:#dacff2;color:#4b2f8f}button.t-ai:hover:not(:disabled){border-color:#b9a6e6}
+button.t-pack{background:#f6eee3;border-color:#e4d3b9;color:#6b4a1f}button.t-pack:hover:not(:disabled){border-color:#cdb08a}
+button.t-order{background:#e8f0fb;border-color:#c9d9f1;color:#1f4f8f}button.t-order:hover:not(:disabled){border-color:#9ebbe6}
+button.t-done{background:var(--ok-soft);border-color:#bfdccb;color:var(--ok)}button.t-done:hover:not(:disabled){border-color:#8fc2a3}
+button.danger{color:var(--muted)}button.danger:hover:not(:disabled){color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.actions .sep{width:1px;align-self:stretch;background:var(--line);margin:2px 3px}
+.actions .push{margin-left:auto}
+button.p{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+button.p:hover{filter:brightness(.95)}
+button.ghost{border-color:transparent;background:transparent}
+button:disabled{opacity:.5;cursor:default}
+button.big{padding:9px 26px;font-size:15.5px}
+button.small{padding:4px 10px;font-size:12.5px;color:var(--muted)}
+input,select,textarea{border:1px solid var(--line);border-radius:7px;padding:6px 9px;background:#fff;width:100%}
+textarea{resize:vertical}
+label{font-size:12px;color:var(--muted);display:block;margin:8px 0 3px}
+.topbar{height:40px;box-sizing:border-box;display:flex;align-items:center;gap:8px;padding:0 12px;background:#33302c;border-bottom:1px solid #1c1a18}
+.topbar button{padding:5px 12px;font-size:13px}
+.topbar .tinfo{color:#cfc8bb;font-size:12.5px;margin-left:6px}
+.app{display:grid;grid-template-columns:200px 380px 1fr;height:calc(100vh - 40px)}
+.app.board-mode{grid-template-columns:200px 1fr}
+.app.board-mode .list,.app.board-mode .reader{display:none}
+.app:not(.board-mode) .board{display:none}
+/* sidebar */
+.side{background:#262421;color:#e9e5dd;display:flex;flex-direction:column;min-height:0}
+.brand{padding:16px 16px 12px;font-weight:700;font-size:15px;letter-spacing:.2px}
+.brand small{display:block;font-weight:400;color:#a59f94;font-size:12px}
+.tabs{display:flex;gap:4px;padding:0 10px 10px}
+.tabs button{flex:1;background:#34312d;border-color:#34312d;color:#e9e5dd;font-size:13px}
+.tabn{display:inline-block;min-width:18px;font-size:11.5px;font-weight:700;line-height:17px;border-radius:9px;padding:0 5px;margin-left:4px;background:#f4c542;color:#3a2e00;vertical-align:1px}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.folders{flex:0 0 auto;padding:4px 6px 6px}
+.remind{flex:1;overflow:auto;padding:2px 8px 10px;min-height:40px}
+.remadd{width:100%;border:1px dashed #5b554d;background:transparent;color:#a59f94;font-size:15px;line-height:1;padding:3px 0;border-radius:6px}
+.remadd:hover{color:#fff;border-color:#a59f94}
+.rem{position:relative;background:#fffdf3;color:#2a2824;border-radius:8px;padding:6px 24px 6px 8px;margin-bottom:6px;transition:background .3s}
+.rem textarea{width:100%;border:0;background:transparent;resize:none;padding:0;font-size:13px;line-height:1.35;min-height:20px;outline:none;color:inherit;overflow:hidden}
+.rem .rx{position:absolute;top:2px;right:2px;border:0;background:transparent;color:#9a948a;font-size:13px;padding:2px 5px;line-height:1}
+.rem .rx:hover{color:var(--accent)}
+.rem .rt{display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-top:4px;font-size:11.5px}
+.rem .rt button{font-size:11px;padding:1px 6px;border-radius:5px;background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.12);color:inherit}
+.rem .due{font-weight:700}
+.rem.soon{background:#f4c542}
+.rem.late{background:#e05a47;color:#fff}
+.rem.late .rx,.rem.late .rt button{color:#fff;border-color:rgba(255,255,255,.4)}
+.folder{display:flex;justify-content:space-between;padding:6px 10px;border-radius:6px;cursor:pointer;color:#d8d3ca}
+.folder:hover{background:#34312d}
+.folder.on{background:#45403a;color:#fff}
+.folder .fic{display:inline-block;width:22px;margin-right:6px;text-align:center}
+.folder .n{font-size:12px;color:#fff;background:var(--accent);border-radius:9px;padding:0 7px}
+.tbottom{display:flex;gap:6px;margin:10px 0 24px}
+.notebtn{margin-left:auto;font-size:11.5px;padding:1px 8px;border-radius:6px;background:#fffdf3;border-color:#e4d3a3;color:#6b5a1f}
+.notebtn:hover{border-color:#c9b06a}
+.newmail{margin:8px 10px 2px;padding:6px 10px;border-radius:7px;background:#45403a;border-color:#5b554d;color:#fff;font-weight:600;text-align:left}
+.newmail:hover{background:#524c45}
+.notesbox{padding:6px;border-top:1px solid #34312d}
+.notesbox .folder{color:#e8d9a8}
+.notesbox .folder .n{background:#8a7a45}
+#inboxN{background:#5b554d}
+.side .foot{padding:10px 14px;font-size:12px;color:#a59f94;border-top:1px solid #34312d}
+/* list */
+.list{border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0}
+.qwrap{position:relative}.qwrap input{width:100%;padding-right:30px}.qx{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--muted);font-size:15px;line-height:1;padding:4px 6px;cursor:pointer;display:none}.qx:hover{color:inherit}.qwrap.has .qx{display:block}
+.lhead{padding:10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.filters{display:flex;gap:4px;flex-wrap:wrap}
+.filters button{font-size:12px;padding:3px 9px;border-radius:12px}
+.filters button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.items{overflow:auto;flex:1}
+.item{padding:9px 12px 9px 14px;border-bottom:1px solid var(--line);cursor:pointer;position:relative}
+.item:hover{background:var(--soft)}
+.item.on{background:var(--sel)}
+.item.unread::before{content:"";position:absolute;left:5px;top:15px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.item .r1{display:flex;justify-content:space-between;gap:8px}
+.item .who{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item.unread .who{color:#000}
+.item:not(.unread) .who{font-weight:500}
+.item .when{color:var(--muted);font-size:12px;white-space:nowrap}
+.item .subj{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#3d3a35}
+.item .who{font-weight:400 !important;color:#3d3a35}
+.item .who b{font-weight:650;color:var(--ink)}
+.item.unread .who b{font-weight:750}
+.item .subj1{color:#5b574f}
+.item .sum{font-size:12.5px;line-height:1.35;color:#2c2a26;margin-top:3px;white-space:pre-line;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.item .sum.wait{color:var(--muted)}
+.item.ask{box-shadow:inset 4px 0 0 var(--accent)}
+.item.invoice{background:#fff6ec}
+.item.invoice:hover{background:#ffefdc}
+.item.invoice.on{background:#ffe8cc}
+.item .askr{color:var(--accent);font-size:12px;font-weight:600}
+.item .tags{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap}
+.tag{font-size:11px;border-radius:9px;padding:0 7px;background:var(--soft);border:1px solid var(--line);color:var(--muted)}
+.tag.ord{background:var(--blue-soft);border-color:#c9d8ec;color:var(--blue)}
+.tag.ok{background:var(--ok-soft);border-color:#c6e0cf;color:var(--ok)}
+.tag.wait{background:var(--warn-soft);border-color:#f0dcae;color:var(--warn)}
+.tag.ai{background:#f1ecfb;border-color:#ddd1f3;color:#5b3fa0}
+.pager{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+/* reader */
+.reader{display:flex;flex-direction:column;min-height:0;min-width:0}
+.rscroll{overflow:auto;flex:1;padding:18px 22px 30px}
+.empty{color:var(--muted);text-align:center;margin-top:20vh}
+.rtitle{font-size:19px;font-weight:650;margin:0 0 6px}
+.meta{color:var(--muted);font-size:13px}
+.meta b{color:var(--ink);font-weight:600}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}
+/* kirja tööriistariba: rühmad sildiga, suuremad ikoonid (v65) */
+.tb{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0;align-items:stretch}
+.tg{display:flex;flex-direction:column;gap:5px;background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:6px 8px 8px}
+.tg .tl{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;padding-left:3px}
+.tg .tbs{display:flex;gap:6px;flex-wrap:wrap}
+.tg.g-reply{background:#fdf4f2;border-color:#f1d3cc}
+.tg.g-files{background:#fdf8e8;border-color:#efe0ad}
+.tg.g-order{background:#f0f6f1;border-color:#cfe3d5}
+.tg.g-mail{background:#f2f5fa;border-color:#d6dfec}
+.tg.g-solo{background:transparent;border-color:transparent;padding-left:0;padding-right:0}
+.tb button.big2{font-size:15.5px;padding:9px 18px}
+.tg.g-del{margin-left:auto;background:transparent;border-color:transparent;justify-content:flex-end}
+.tb button,.ib{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;font-size:14px;line-height:1.2}
+.ib .ic,.tb .ic{font-size:20px;line-height:1;width:22px;text-align:center}
+.tb button.danger{padding:6px 10px;font-size:13px}
+.tb button.danger .ic{font-size:16px;width:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:12px 0}
+.card h4{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
+.body{white-space:pre-wrap;word-wrap:break-word;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:14px}
+.body .q{color:#8a857c}
+.ai-card{border-color:#ddd1f3;background:#fbf9ff}
+.ai-card dl{display:grid;grid-template-columns:120px 1fr;gap:3px 10px;margin:6px 0}
+.ai-card dt{color:var(--muted);font-size:13px}
+.ai-card dd{margin:0}
+.files .row{display:flex;align-items:center;gap:8px;padding:3px 0}
+.files .row input[type=checkbox]{width:auto}
+.files a{color:var(--blue)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px}
+/* lõim */
+.cnt{display:inline-block;font-size:11px;font-weight:600;color:var(--muted);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:0 6px;margin-left:3px}
+.thread{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.msg{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.msg.ours{background:#f6f9fd;border-color:#d7e3f2}
+.msg.notice{background:#fbfaf6;border-style:dashed}
+.msg.focus{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.msg.closed{cursor:pointer;padding:8px 14px}
+.msg.closed:hover{border-color:#c9c3b8}
+.mh{display:flex;gap:8px;align-items:baseline;cursor:pointer;min-width:0}
+.mh .when{margin-left:auto;color:var(--muted);font-size:12px;white-space:nowrap}
+.mh .snip{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.mb{white-space:pre-wrap;word-wrap:break-word;margin-top:8px}
+.mb.q{color:#8a857c;border-left:3px solid var(--line);padding-left:10px}
+.qt{color:var(--muted);font-size:12px;cursor:pointer;margin-top:6px;display:inline-block}
+.qt:hover{color:var(--ink)}
+/* composer */
+.composer{border-top:2px solid var(--accent);background:var(--panel);padding:12px 22px 14px;max-height:62vh;overflow:auto;display:none}
+.composer.open{display:block}
+.composer .top{display:flex;justify-content:space-between;align-items:center}
+.composer textarea{min-height:200px;font-family:inherit}
+.composer .bar{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.composer .bar .sp{flex:1}
+.chk{display:inline-flex;gap:5px;align-items:center;font-size:13px;color:var(--muted)}
+.chk input{width:auto}
+/* board */
+.board{display:flex;flex-direction:column;min-height:0}
+.bhead{padding:14px 18px;display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);background:var(--panel)}
+.bhead h2{margin:0;font-size:17px;flex:1}
+.cols{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:12px;padding:14px 18px;overflow:auto;flex:1;align-items:start}
+.col{background:#ebe8e2;border-radius:10px;padding:8px;min-height:120px}
+.col h3{font-size:13px;margin:4px 6px 8px;display:flex;justify-content:space-between}
+.col h3 span{color:var(--muted);font-weight:400}
+.oc{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 10px;margin-bottom:8px;cursor:pointer}
+.oc:hover{border-color:#c9c3b8}
+.oc .k{font-weight:600}
+.oc.paid{border-left:5px solid #2e9e4f;padding-left:7px}
+.oc .desc{font-size:12.5px;margin:3px 0 2px;padding:2px 4px;border-radius:4px;outline:none;min-height:18px;color:#2a2824;background:#fbf6e3}
+.oc .desc:empty{background:transparent}
+.oc .desc:empty:before{content:attr(data-ph);color:#b3ada2}
+.oc .desc:focus{background:#fff6d6;box-shadow:0 0 0 1px #e8cf73}
+.oc .t{font-size:13px;color:#3d3a35;margin:2px 0}
+.oc .d{font-size:12px;color:var(--muted)}
+.oc .d.late{color:var(--accent);font-weight:600}
+/* modal */
+.muted{color:#8a8378}
+.modal{position:fixed;inset:0;background:rgba(20,18,15,.45);display:none;align-items:center;justify-content:center;z-index:20}
+.modal.open{display:flex}
+.mwrap{position:relative}
+.mclose{position:absolute;top:8px;right:10px;z-index:2;border:0;background:transparent;font-size:18px;line-height:1;padding:6px 8px;color:var(--muted);cursor:pointer;border-radius:6px}
+.mclose:hover{background:var(--accent-soft);color:var(--accent)}
+.mbox{background:var(--panel);border-radius:12px;width:min(640px,94vw);max-height:90vh;overflow:auto;padding:18px 20px}
+.mbox.wide{width:min(1000px,96vw)}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:2px 10px;margin:0 6px 6px 0;font-size:13px}
+.chip a{color:var(--muted);text-decoration:none}
+.warn{border-radius:9px;padding:10px 12px;margin:10px 0;font-size:13.5px}
+.warn.red{background:var(--accent-soft);border:1px solid #f1c2b8;color:#8f2a17}
+.warn.amber{background:var(--warn-soft);border:1px solid #f0dcae;color:#6d4700}
+.warn.info{background:#f1ecfb;border:1px solid #ddd1f3;color:#3f2b72}
+.warn ul{margin:4px 0 0;padding-left:18px}
+table.rows{width:100%;border-collapse:collapse;margin-top:6px}
+table.rows th{font-size:12px;color:var(--muted);font-weight:500;text-align:left;padding:4px 4px;border-bottom:1px solid var(--line)}
+table.rows td{padding:4px;vertical-align:top}
+table.rows td.num, table.rows th.num{text-align:right}
+table.rows input{padding:5px 7px}
+table.rows .src{font-size:11.5px;color:var(--muted);margin-top:2px}
+.totals{display:grid;grid-template-columns:auto 110px;gap:2px 14px;justify-content:end;margin-top:8px;font-size:14px}
+.totals b{font-size:16px}
+table.hist{width:100%;border-collapse:collapse;font-size:12.5px}
+table.hist td{padding:3px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+details summary{cursor:pointer;color:var(--muted);font-size:13px;margin-top:10px}
+.inv-who{display:flex;gap:10px;align-items:baseline;margin:6px 0 4px;font-size:16px}
+.inv-who .meta{font-size:12.5px}
+.pf{display:flex;gap:6px;align-items:center}
+.pf input,.pf select{flex:1}
+.pf button{padding:5px 9px}
+.src2{font-size:11.5px;color:var(--muted);margin-top:2px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ink);color:#fff}
+.mbox h3{margin:0 0 6px}
+.mbar{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#262421;color:#fff;padding:9px 16px;border-radius:8px;display:none;z-index:30;max-width:80vw}
+.toast.err{background:var(--accent)}
+.jobs{position:fixed;right:16px;bottom:16px;width:320px;z-index:15}
+.job{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:6px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.job .bar{height:4px;background:var(--line);border-radius:2px;margin-top:5px}
+.job .bar i{display:block;height:100%;background:var(--ok);border-radius:2px}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:s .8s linear infinite;vertical-align:-2px}
+@keyframes s{to{transform:rotate(360deg)}}
+/* failibrowser (v62) */
+.app.files-mode{grid-template-columns:200px 1fr}
+.app.files-mode .list,.app.files-mode .reader,.app.files-mode .board{display:none}
+.app:not(.files-mode) .fb{display:none}
+/* tasumata arved (v68) */
+.app.debt-mode{grid-template-columns:200px 1fr}
+.app.debt-mode .list,.app.debt-mode .reader,.app.debt-mode .board,.app.debt-mode .fb{display:none}
+.app:not(.debt-mode) .debt{display:none}
+.debt{display:flex;flex-direction:column;min-height:0}
+.debtbody{overflow:auto;padding:14px 18px}
+.debtsum{font-size:13px;color:var(--muted)}
+.debtsum b{color:var(--ink)}
+.tabn.red{background:#c0392b;color:#fff}
+table.debt-t{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13.5px}
+table.debt-t th{font-size:12px;color:var(--muted);font-weight:500;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--soft)}
+table.debt-t td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.debt-t tr:last-child td{border-bottom:0}
+table.debt-t td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.debt-t tr.late td.due{color:#c0392b;font-weight:600}
+table.debt-t tr.late{background:#fdf3f1}
+table.debt-t tr.late2{background:#fbe6e2}
+.debt .sub{font-size:12px;color:var(--muted);font-weight:400}
+table.debt-t button{padding:3px 9px;font-size:12.5px;white-space:nowrap}
+table.debt-t tr{cursor:pointer}
+table.debt-t tr:hover td{background:rgba(0,0,0,.025)}
+table.debt-t th.srt{cursor:pointer;user-select:none}
+table.debt-t th.srt.on{color:var(--ink);font-weight:600}
+.tag.stw{background:#fff3d6;border-color:#f0d58a;color:#7a5a00}
+.remtag{display:inline-block;font-size:12px;background:#e7f0fb;border:1px solid #bcd3ee;color:#1f4e85;border-radius:9px;padding:1px 8px;white-space:nowrap}
+.dgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:18px;margin-top:10px}
+.ddraft textarea{min-height:230px;font-family:inherit}
+.ddraft label{display:block;margin:8px 0 3px;font-size:12.5px;color:var(--muted)}
+.dinfo{border-left:1px solid var(--line);padding-left:16px;max-height:68vh;overflow:auto;font-size:13.5px}
+.dsum{background:var(--soft);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:6px}
+.dsum.hot{background:#fff6dc;border-color:#f0d58a}
+.dpay{font-weight:700;margin-bottom:4px}
+.dq{font-style:italic;margin-bottom:6px}
+.dsec{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin:14px 0 5px}
+.dmail{padding:4px 6px;border-radius:6px;cursor:pointer;font-size:13px}
+.dmail:hover,.dmsg:hover{background:var(--soft)}
+.dmail span{color:var(--muted)}
+.dmsg{border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-bottom:6px;cursor:pointer}
+.dmsg.ours{border-left:3px solid var(--accent)}
+.dmh{font-size:12.5px;color:var(--muted)}
+.dmt{font-weight:600;font-size:13px;margin:2px 0}
+.dmb{white-space:pre-wrap;font-size:12.5px;color:#4a463f;max-height:7.5em;overflow:hidden}
+.drreply{background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:7px 10px;margin-bottom:4px;line-height:1.5}
+.drreply .chk{display:flex;color:var(--ink);font-weight:600}
+.dcand{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px}
+@media (max-width:800px){.dgrid{grid-template-columns:1fr}.dinfo{border-left:0;padding-left:0}}
+.tabs{flex-direction:column;gap:3px}
+.tabs button{display:flex;align-items:center;gap:9px;text-align:left;padding:8px 10px;font-size:14px;white-space:nowrap;background:transparent;border-color:transparent}
+.tabs button:hover{background:#34312d}
+.tabs button .ic{font-size:18px;width:22px;text-align:center}
+.tabs .tabn{margin-left:auto}
+.fb{display:flex;flex-direction:column;min-height:0}
+.fbhead{padding:12px 18px;display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.fbcrumb{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:2px;font-size:15px;min-width:200px}
+.fbcrumb a{color:var(--ink);text-decoration:none;padding:2px 6px;border-radius:5px;cursor:pointer}
+.fbcrumb a:hover{background:var(--soft)}
+.fbcrumb a:last-child{font-weight:700}
+.fbcrumb .sl{color:#b3ada2}
+.fbhead .qwrap{width:260px;flex:0 0 auto}
+.fbbody{flex:1;display:grid;grid-template-columns:1fr 340px;min-height:0}
+.fbbody.nopv{grid-template-columns:1fr}
+.fbbody.nopv .fbpv{display:none}
+.fblist{overflow:auto;padding:10px 14px 30px}
+.fbsec{font-size:12px;color:var(--muted);margin:12px 4px 6px;text-transform:uppercase;letter-spacing:.4px}
+.fbgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.fbit{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:8px;cursor:pointer;user-select:none;display:flex;flex-direction:column;gap:5px;min-width:0}
+.fbit:hover{border-color:#c9c3b8}
+.fbit.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.fbit .th{height:110px;border-radius:6px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:38px;overflow:hidden}
+.fbit .th img{max-width:100%;max-height:100%;object-fit:contain}
+.fbit .nm{font-size:12.5px;line-height:1.3;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.fbit .mt{font-size:11.5px;color:var(--muted)}
+.fbrows .fbit{flex-direction:row;align-items:center;padding:7px 10px;margin-bottom:5px}
+.fbrows .fbit .ic{font-size:20px;width:26px;text-align:center}
+.fbrows .fbit .nm{flex:1;-webkit-line-clamp:1}
+.fbit.today{border-left:4px solid var(--accent)}
+.fbpv{border-left:1px solid var(--line);background:var(--panel);overflow:auto;padding:14px}
+.fbpv .big{background:var(--soft);border-radius:8px;min-height:180px;display:flex;align-items:center;justify-content:center;font-size:60px;overflow:hidden}
+.fbpv .big img{max-width:100%;max-height:60vh;display:block}
+.fbpv h4{margin:10px 0 4px;font-size:14px;word-break:break-word}
+.fbpv .kv{font-size:12.5px;color:var(--muted);line-height:1.6}
+.fbpv .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.fbempty{color:var(--muted);padding:30px;text-align:center}
+/* 3D filamendi ladu (v82) */
+.foarv{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:9px;background:var(--soft);color:var(--muted)}
+#foArved .filord select{width:auto;max-width:300px;flex:none}
+#foArved .filord .x{min-width:0}
+.foarv.uus{background:#fdecc8;color:#8a5a00}.foarv.teel{background:#dbeafe;color:#1e4fa0}.foarv.laos{background:#d9f2df;color:#1d6b33}
+.app.fil-mode{grid-template-columns:200px 1fr}
+.app.fil-mode .list,.app.fil-mode .reader,.app.fil-mode .board,.app.fil-mode .fb,.app.fil-mode .debt{display:none}
+.app:not(.fil-mode) .fil{display:none}
+.fil{display:flex;flex-direction:column;min-height:0}
+.fil .bhead{flex-wrap:wrap}
+.filsum{font-size:13px;color:var(--muted)}
+.filsum b{color:var(--ink)}
+.filscan{width:300px;flex:0 0 auto;font-size:15px;padding:7px 10px;border:2px solid var(--line)}
+.filscan:focus{border-color:var(--ok);outline:none}
+.fil .seg button.on{background:var(--ok);color:#fff}
+.fil .seg button.on.sale{background:var(--accent)}
+.fil .seg button.on.receipt{background:var(--blue)}
+.filbody{flex:1;display:grid;grid-template-columns:1fr 330px;min-height:0}
+.filmain{overflow:auto;padding:12px 18px}
+.filside{overflow:auto;padding:12px 14px;border-left:1px solid var(--line);background:var(--soft)}
+.filtools{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.filtools .qwrap{width:320px}
+table.fil-t{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13.5px}
+table.fil-t th{font-size:12px;color:var(--muted);font-weight:500;text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);background:var(--soft);position:sticky;top:0}
+table.fil-t td{padding:5px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.fil-t tr:last-child td{border-bottom:0}
+table.fil-t tbody tr{cursor:pointer}
+table.fil-t tbody tr:hover td{background:var(--sel)}
+table.fil-t td.num,table.fil-t th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+table.fil-t td.q{font-weight:700;font-size:15px}
+table.fil-t td.q.z{color:var(--muted);font-weight:400}
+table.fil-t td.q.neg{color:var(--accent)}
+table.fil-t .im{width:42px;padding-right:0}
+.filimg{width:34px;height:34px;border-radius:6px;object-fit:contain;background:var(--soft);display:block}
+.fil .sub{font-size:12px;color:var(--muted)}
+table.fil-t button{padding:2px 9px;font-size:13px}
+table.fil-t tr.hl td{background:var(--ok-soft)}
+.filmv{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:5px;font-size:12.5px}
+.filmv .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.filmv .d{font-weight:700;font-variant-numeric:tabular-nums;min-width:34px;text-align:right}
+.filmv .d.inventory{color:var(--ok)}.filmv .d.receipt{color:var(--blue)}.filmv .d.sale{color:var(--accent)}.filmv .d.adjust{color:var(--warn)}
+.filmv button{border:0;background:none;color:var(--muted);padding:2px 5px}
+.filmv button:hover{color:var(--accent)}
+.filtund{background:var(--panel);border:1px solid var(--accent);border-radius:8px;padding:8px;margin-top:10px;font-size:12.5px}
+.filtund .r{display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid var(--line)}
+.filtund .r:first-of-type{border-top:0}
+.filtund .r span{flex:1;font-variant-numeric:tabular-nums}
+.filh{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:4px 0 8px;font-weight:600}
+.filres{max-height:300px;overflow:auto;margin-top:8px}
+.filres div{display:flex;gap:8px;align-items:center;padding:5px 6px;border-radius:6px;cursor:pointer}
+.filres div:hover{background:var(--sel)}
+/* filamendi tellimine (v85) */
+.filviews{display:inline-flex}
+.filviews .tabn{margin-left:5px}
+.filv{display:none}
+.filv.on{display:grid}
+.filscroll{overflow:auto;padding:12px 18px;min-height:0}
+.filv.one{grid-template-columns:1fr}
+.filstats{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.filstat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;min-width:150px}
+.filstat b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.filstat span{font-size:12px;color:var(--muted)}
+.filbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:10px;font-size:13px;color:var(--muted)}
+.filnote{background:var(--warn-soft);border:1px solid #f0dcae;color:#6d4700;border-radius:9px;padding:8px 12px;margin-bottom:10px;font-size:13px}
+table.fil-t tr.filgrp td{background:var(--soft);cursor:pointer;font-size:13.5px;padding:8px 10px;user-select:none}
+table.fil-t tr.filgrp:hover td{background:var(--sel)}
+table.fil-t tr.filgrp .gar{display:inline-block;width:16px;color:var(--muted);transition:transform .15s}
+table.fil-t tr.filgrp.open .gar{transform:rotate(90deg)}
+table.fil-t tr.filgrp .gsum{margin-left:10px;color:var(--muted);font-size:12.5px}
+table.fil-t tr.vrow td{border-top:0;padding-top:0}
+table.fil-t .warnt{color:var(--warn)}
+table.fil-t td.sugc{text-align:center;white-space:nowrap}
+.fdq{display:inline-flex;align-items:center;gap:3px}
+.fdq input{width:46px;text-align:center;padding:3px 2px;font-weight:600}
+.fdq input.z{color:var(--muted);font-weight:400}
+.fdq button{padding:2px 8px}
+.inord{display:inline-block;min-width:22px;padding:0 7px;border-radius:9px;background:var(--ok);color:#fff;font-weight:700;font-size:12px;text-align:center}
+.fvars{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.fvar{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:2px 8px;background:var(--panel)}
+.fvar.on{border-color:var(--ok);color:var(--ink)}
+.fvar.out{color:var(--warn)}
+.fvar button{padding:0 6px;font-size:11.5px}
+.fvwhy{color:var(--warn);font-size:12px}
+.fpf{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-left:4px}
+.fpf button{border:0;border-radius:0;padding:1px 7px;font-size:11.5px;background:var(--panel);color:var(--muted)}
+.fpf button.on{background:var(--ok);color:#fff}
+.filcard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.filcard .t{font-weight:700;font-size:14px}
+.filres2{max-height:280px;overflow:auto;margin-top:6px}
+.filres2 .ri{display:flex;gap:8px;align-items:center;padding:5px 4px;border-bottom:1px solid var(--line);font-size:12.5px}
+.filres2 .ri .x{flex:1;min-width:0}
+.filres2 .ri button{padding:2px 8px;font-size:12px;white-space:nowrap}
+.filrules label{display:flex;align-items:center;gap:6px;margin:4px 0;color:var(--ink);font-size:13px}
+.filrules input{width:56px;text-align:center}
+.filsumbar{display:flex;flex-wrap:wrap;gap:6px 24px;align-items:baseline;margin:12px 0;padding:12px 14px;background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.filsumbar b{font-size:18px}
+.filconf{margin:10px 0;padding:12px 14px;border:1.5px solid var(--ok);border-radius:10px;background:var(--ok-soft)}
+.filconf.warn{border-color:var(--warn);background:var(--warn-soft)}
+table.fil-t tr.outrow td{background:var(--warn-soft)}
+.filord{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.filord .x{flex:1;min-width:220px}
+.filord input[type=date]{width:auto;padding:2px 6px}
+.filv{flex:1;min-height:0}
+.fil .bhead h2{white-space:nowrap}
+.fil.notlaos #filSum,.fil.notlaos #filMode{display:none}
+/* ===== v106: modernsem välimus (ainult värvid/nurgad/varjud; paigutus sama). Tagasi: kustuta see plokk või kasuta varu/index_v105.html ===== */
+:root{
+  --bg:#f2f3f6; --panel:#ffffff; --ink:#1c2230; --muted:#687083; --line:#e3e6ec; --soft:#f7f8fa;
+  --accent:#d9472f; --accent-ink:#fff; --accent-soft:#fdeee9; --ok:#1f8a4c; --ok-soft:#e6f5ec;
+  --warn:#a76200; --warn-soft:#fdf3dc; --blue:#2b5fb4; --blue-soft:#e9f0fc; --sel:#fff2ec;
+  --side:#1b2130; --side2:#252c3d; --side3:#30384c; --sidetxt:#e6e9f0; --sidemut:#98a0b3;
+  --hover-line:#c7ccd6; --shadow-sm:0 1px 2px rgba(20,28,45,.06); --shadow:0 1px 3px rgba(20,28,45,.07),0 4px 14px rgba(20,28,45,.05);
+}
+html,body{font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#c9ced8;border-radius:10px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:#aab1bf;background-clip:padding-box;border:2px solid transparent}
+::-webkit-scrollbar-track{background:transparent}
+.side ::-webkit-scrollbar-thumb{background:#3a4357;background-clip:padding-box}
+/* nupud */
+button{border-radius:8px;box-shadow:var(--shadow-sm);transition:background-color .12s,border-color .12s,box-shadow .12s,color .12s}
+button:hover{border-color:var(--hover-line)}
+button:hover:not(:disabled){box-shadow:0 1px 3px rgba(20,28,45,.12)}
+button.ghost,button.danger,.qx,.mclose,.rem .rx,.filmv button{box-shadow:none}
+button.green{background:#22a05a;border-color:#22a05a}button.green:hover:not(:disabled){background:#1b8a4c;border-color:#1b8a4c}
+button.folder{background:#f7cd4f;border-color:#e9b934;color:#3d2f00}button.folder:hover:not(:disabled){background:#f2c23a;border-color:#d8a722}
+button.t-ai{background:#f3effc;border-color:#e0d6f5;color:#4f3594}
+button.t-pack{background:#f8f1e8;border-color:#ead9c2;color:#6e4c22}
+button.t-order{background:var(--blue-soft);border-color:#cfdcf3;color:#244f99}
+button.t-done{border-color:#c4e3d0}
+button.p{background:var(--accent);border-color:var(--accent)}
+button.p:hover{filter:none;background:#c43d27;border-color:#c43d27}
+input,select,textarea{border-radius:8px;border-color:var(--line);transition:border-color .12s,box-shadow .12s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#9fb4dc;box-shadow:0 0 0 3px rgba(43,95,180,.13)}
+/* ülariba + külgmenüü */
+.topbar{background:var(--side);border-bottom:1px solid #121724}
+.topbar button{background:#ffffff;border-color:transparent}
+.topbar .tinfo{color:var(--sidemut)}
+.side{background:var(--side);color:var(--sidetxt)}
+.brand small{color:var(--sidemut)}
+.tabs button{color:var(--sidetxt);border-radius:9px;box-shadow:none}
+.tabs button:hover{background:var(--side2)}
+.tabs button.on{background:var(--accent);border-color:var(--accent);box-shadow:0 2px 8px rgba(217,71,47,.35)}
+.folder{color:#cdd2dd;border-radius:8px}
+.folder:hover{background:var(--side2)}
+.folder.on{background:var(--side3);color:#fff}
+.newmail{background:var(--side2);border-color:#353e53;box-shadow:none}
+.newmail:hover{background:var(--side3)}
+#inboxN{background:#3d475d}
+.notesbox,.side .foot{border-top-color:var(--side2)}
+.side .foot{color:var(--sidemut)}
+.remadd{border-color:#3d465b;color:var(--sidemut);box-shadow:none}
+.remadd:hover{border-color:var(--sidemut)}
+.rem{border-radius:9px;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+.rem .rt button{box-shadow:none}
+.rem.soon{background:#f7cd4f}
+.rem.late{background:#df4f3b}
+/* kirjade nimekiri */
+.list{border-right-color:var(--line)}
+.filters button{border-radius:14px;box-shadow:none}
+.filters button.on{background:var(--ink);border-color:var(--ink)}
+.item{border-bottom-color:#eef0f4}
+.item:hover{background:#f8f9fb}
+.item.on{background:var(--sel);box-shadow:inset 3px 0 0 var(--accent)}
+.item.ask.on{box-shadow:inset 4px 0 0 var(--accent)}
+.item .subj,.item .who{color:#3b4252}
+.item .subj1{color:#5c6475}
+.item .sum{color:#2a3040}
+.item.invoice{background:#fff7ee}
+.tag{border-radius:10px}
+/* lugemisala */
+.rtitle{letter-spacing:-.01em}
+.tg{border-radius:12px;box-shadow:var(--shadow-sm)}
+.tg.g-reply{background:#fdf3f0;border-color:#f6d9d1}
+.tg.g-files{background:#fef9ea;border-color:#f3e4b5}
+.tg.g-order{background:#f1f8f3;border-color:#d4e9da}
+.tg.g-mail{background:#f2f6fc;border-color:#d9e3f2}
+.tg.g-solo,.tg.g-del{box-shadow:none}
+.card,.body,.msg{border-radius:12px;box-shadow:var(--shadow)}
+.card{border-color:var(--line)}
+.msg.ours{background:#f5f8fd;border-color:#dbe5f4}
+.msg.notice{box-shadow:none}
+.msg.closed:hover,.oc:hover,.fbit:hover{border-color:var(--hover-line)}
+.composer{box-shadow:0 -6px 20px rgba(20,28,45,.08)}
+/* tahvel */
+.bhead,.fbhead{background:var(--panel)}
+.col{background:#e8ebf0;border-radius:12px}
+.oc{border-radius:10px;box-shadow:var(--shadow-sm);transition:box-shadow .12s,border-color .12s}
+.oc:hover{box-shadow:var(--shadow)}
+.oc .t{color:#3b4252}
+.oc .desc{color:#2a3040}
+/* aknad, teated */
+.modal{background:rgba(15,20,32,.45);backdrop-filter:blur(2px)}
+.mbox{border-radius:16px;box-shadow:0 20px 50px rgba(15,20,32,.25)}
+.toast{background:var(--side);border-radius:10px;box-shadow:0 8px 24px rgba(15,20,32,.25)}
+.job{border-radius:10px;box-shadow:var(--shadow)}
+.warn{border-radius:10px}
+.chip{border-radius:14px}
+/* failid, tasumata, filament */
+.fbit{border-radius:11px;box-shadow:var(--shadow-sm)}
+.fbit .th,.fbpv .big{border-radius:8px}
+table.debt-t,table.fil-t{border-radius:12px;box-shadow:var(--shadow)}
+.filstat,.filbar,.filcard,.filsumbar,.filord{border-radius:12px;box-shadow:var(--shadow-sm)}
+.dsum,.dmsg,.dcand,.drreply{border-radius:10px}
+.muted{color:#7d8496}
+.body .q,.mb.q{color:#858c9c}
+.msg.focus{border-color:#eda898;box-shadow:0 0 0 3px rgba(217,71,47,.09),var(--shadow)}
+.reader{background:var(--bg)}
+/* ===== v106 lõpp ===== */
+</style>
+<style>
+.app.fil-mode{height:100vh}
+.side .brand small{display:block}
+.side .lnk{display:block;padding:8px 12px;border-radius:8px;color:inherit;text-decoration:none;margin:2px 0}
+.side .lnk:hover{background:rgba(127,127,127,.12)}
+</style>
+</head>
+<body>
+<div class="app fil-mode" id="app">
+  <aside class="side">
+    <div class="brand">3dmarket ladu<small>ladu.3dmarket.ee</small></div>
+    <div class="tabs"><button id="tabFil" class="on"><span class="ic">🧵</span>Filament <span class="tabn" id="filN"></span></button></div>
+    <a class="lnk" href="/skanner" target="_blank">📱 Telefoni skänner</a>
+    <a class="lnk" href="/logout">Logi välja</a>
+    <div class="foot" id="foot"></div>
+  </aside>
+  <section class="fil">
+    <div class="bhead"><h2>Filamendi ladu</h2>
+      <div class="seg filviews" id="filViews"><button data-v="laos" class="on">Laoseis</button><button data-v="ord">Tellimine</button><button data-v="cart">Avatud tellimus<span class="tabn" id="foCartN"></span></button><button data-v="teel">Teel<span class="tabn" id="foTeelN"></span></button></div>
+      <span id="filSum" class="filsum"></span>
+      <span class="sp" style="flex:1"></span>
+      <div class="seg" id="filMode"><button data-t="inventory" class="on" title="Loendan laos olevaid rulle">Inventuur</button><button data-t="receipt" class="receipt" title="Kaup tuli">Sisse</button><button data-t="sale" class="sale" title="Müük / kulu">Välja</button></div>
+      <input id="filScan" class="filscan" placeholder="Skänni või sisesta EAN + Enter" autocomplete="off"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();filScan(this.value)}">
+      <button class="ghost" title="Laadi uuesti" onclick="loadFil(true)">↻</button>
+      
+    </div>
+    <div class="filbody filv on" id="filV-laos">
+      <div class="filmain">
+        <div class="filtools">
+          <div class="seg" id="filF"><button data-f="laos" class="on">Laos</button><button data-f="koik">Kõik tooted</button><button data-f="sp">Smartprint</button><button data-f="er">Eryone</button></div>
+          <div class="qwrap"><input id="filQ" placeholder="Otsi nime, värvi, materjali, EAN-i…" autocomplete="off" oninput="clearTimeout(S.filQT);S.filQT=setTimeout(()=>{S.filLim=200;renderFil()},200)"></div>
+          <span class="sub" id="filCnt"></span>
+        </div>
+        <div id="filBody"><div class="empty">…</div></div>
+      </div>
+      <div class="filside">
+        <div class="filh">Telefoniskänner</div>
+        <div class="sub" style="margin-bottom:6px">Telefon saadab iga skänni kohe lattu (töötab igal pool, kus on internet).</div>
+        <button onclick="filTel()">📱 Ühenda telefon</button>
+        <div id="filTund"></div>
+        <div class="filh" style="margin-top:18px">Viimased kanded</div>
+        <div id="filLog"></div>
+        
+      </div>
+    </div>
+    <div class="filv one" id="filV-ord" style="grid-template-columns:1fr 340px">
+      <div class="filscroll">
+        <div class="filstats"><div class="filstat"><b id="foSugN">0</b><span>toodet vaja tellida</span></div><div class="filstat"><b id="foIncN">0</b><span>rulli teel</span></div><div class="filstat"><b id="foVal">0</b><span>laoväärtus €, km-ta</span></div></div>
+        <div class="filbar"><span id="foInfo" style="flex:1"></span><button onclick="loadFo(true)">Uuenda andmed</button></div>
+        <div id="foNote"></div>
+        <details id="foDealsW" hidden style="margin-bottom:12px"><summary style="cursor:pointer;font-weight:600">Praegu soodsamad <span class="sub" id="foDealsN"></span></summary>
+          <div class="sub" id="foDealsNote" style="margin:6px 0"></div><div id="foDeals"></div>
+          <div style="text-align:right;margin-top:8px"><button class="green" onclick="foDealsAdd()">Lisa tellimusele</button></div></details>
+        <div class="filtools">
+          <div class="seg" id="foF"><button data-f="sug" class="on">Soovitused</button><button data-f="sold">Kõik müüdavad</button><button data-f="all">Kõik</button></div>
+          <div class="qwrap"><input id="foQ" placeholder="Otsi nime, värvi, materjali…" autocomplete="off" oninput="clearTimeout(S.foQT);S.foQT=setTimeout(renderFo,200)"></div>
+          <button id="foAddAll" onclick="foAddAll()">Lisa kõik soovitused tellimusse</button>
+          <span class="sp" style="flex:1"></span><button class="small" onclick="foGrpAll('ord',1)">Ava kõik grupid</button><button class="small" onclick="foGrpAll('ord',0)">Sulge kõik</button>
+        </div>
+        <div class="sub" id="foListNote" style="margin-bottom:8px"></div>
+        <div id="foList"></div>
+      </div>
+      <div class="filside">
+        <div class="filcard" id="foDraft"></div>
+        <div class="filcard"><div class="t">Lisa filament</div><input id="foDS" placeholder="Otsi nime, värvi või koodi" autocomplete="off" oninput="foDraftSearch()" style="margin-top:6px"><div class="filres2" id="foDR"></div></div>
+        <div class="filcard"><div class="t">Lisa tooner</div><input id="foTS" placeholder="Printeri mudel (nt HL-1110), mark või kood" autocomplete="off" oninput="foTonerSearch()" style="margin-top:6px"><div class="filres2" id="foTR"></div></div>
+        <div class="filcard filrules"><div class="t">Tellimise reeglid</div>
+          <label>Telli, kui varu jätkub alla <input id="foLow"> päeva</label>
+          <label>Telli nii palju, et jätkuks <input id="foCover"> päevaks</label>
+          <button onclick="foRulesSave()">Salvesta reeglid</button>
+          <div class="sub" id="foRulesNote" style="margin-top:6px"></div></div>
+      </div>
+    </div>
+    <div class="filv one" id="filV-cart"><div class="filscroll" id="foCart"></div></div>
+    <div class="filv one" id="filV-teel"><div class="filscroll" id="foTeel"></div></div>
+  </section>
+</div>
+<div class="modal" id="modal"><div class="mwrap"><button class="mclose" onclick="closeModal()" title="Sulge (Esc)">✕</button><div class="mbox" id="mbox"></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+// Tehtud skriptiga tee_ladu_html.py Postikeskkonna index.html-ist (Filament-vaade). Ära muuda käsitsi.
+const S = {folder:'INBOX', filter:'koik', page:0, pages:1, cur:null, info:{}, orders:[], msg:null};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function api(url, opt={}){
+  if (opt.json){ opt.method = opt.method || 'POST'; opt.headers = {'Content-Type':'application/json'}; opt.body = JSON.stringify(opt.json); }
+  let r;
+  for (let a = 0; ; a++) {   // programm võib parasjagu uuenduse järel taaskäivituda – proovi paar korda uuesti
+    try { r = await fetch(url, opt); if (r.status >= 502 && a < 4) throw new Error('restart'); break; }
+    catch(e){ if (e.name === 'AbortError') throw e; if (a >= 4) throw new Error('Programm ei vasta – proovi uuesti'); await new Promise(res=>setTimeout(res, 2500)); }
+  }
+  let j; try { j = await r.json(); } catch(e){ throw new Error('Server ei vastanud (' + r.status + ')'); }
+  if (!j.ok) throw new Error(j.viga || 'Viga');
+  return j;
+}
+function toast(t, err){ const el=$('toast'); el.textContent=t; el.className='toast'+(err?' err':''); el.style.display='block';
+  clearTimeout(el._t); el._t=setTimeout(()=>el.style.display='none', err?7000:3000); }
+async function guard(fn){ try { return await fn(); } catch(e){ toast(e.message, true); console.error(e); } }
+
+function fmtDate(ts){
+  if(!ts) return '';
+  const d = new Date(ts*1000), n = new Date();
+  if (d.toDateString()===n.toDateString()) return d.toLocaleTimeString('et-EE',{hour:'2-digit',minute:'2-digit'});
+  const y = new Date(n); y.setDate(n.getDate()-1);
+  if (d.toDateString()===y.toDateString()) return 'eile ' + d.toLocaleTimeString('et-EE',{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('et-EE',{day:'numeric',month:'short'}) + (d.getFullYear()!==n.getFullYear()? ' '+d.getFullYear():'');
+}
+
+const eur = v => Number(v||0).toLocaleString('et-EE',{minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+const dEE = s => s ? s.slice(0,10).split('-').reverse().join('.') : '';
+
+function closeModal(){   // sulgeb akna ja katkestab poolelioleva päringu (arve, pakikaart jms)
+  S.modalGen = (S.modalGen||0) + 1; if (S.modalCtl) { try { S.modalCtl.abort(); } catch(e){} S.modalCtl = null; }
+  $('modal').classList.remove('open'); $('mbox').classList.remove('wide'); }
+function modalJob(){ closeModalCtl(); S.modalCtl = new AbortController(); return {gen: S.modalGen = (S.modalGen||0) + 1, signal: S.modalCtl.signal}; }
+function closeModalCtl(){ if (S.modalCtl) { try { S.modalCtl.abort(); } catch(e){} S.modalCtl = null; } }
+const cancelled = (mj, e) => mj.gen !== S.modalGen || (e && e.name === 'AbortError');
+$('modal').onclick = e => { if (e.target.id==='modal') closeModal(); };
+
+/* ---------- 3D filamendi ladu (v82) */
+const FIL_T = {inventory:'Inventuur', receipt:'Sisse', sale:'Välja', adjust:'Parandus'};
+S.fil = {kat:null, by:{}, laos:{}, liik:[], koodid:{}, f:'laos', tyyp:'inventory'}; S.filLim = 200;
+async function loadFil(fresh, quiet){
+  const run = async()=>{
+    const st = await api('/api/filament');
+    if (!S.fil.kat || fresh || st.kataloog_mtime !== S.fil.katM) {
+      const k = await api('/api/filament/kataloog');
+      S.fil.kat = k.tooted; S.fil.by = {}; S.fil.katM = st.kataloog_mtime;
+      k.tooted.forEach(p=>{ S.fil.by[p.sku] = p; p._s = [p.nimi, p.varv, p.mat, p.sari, p.tootja, p.sku, p.ean].join(' ').toLowerCase(); });
+    }
+    Object.assign(S.fil, {laos:st.laos, liik:st.liikumised, koodid:st.koodid, st});
+    renderFil();
+    if (!quiet && $('app').classList.contains('fil-mode') && !$('modal').classList.contains('open')) $('filScan').focus();
+  };
+  if (quiet) { try { await run(); } catch(e){ console.warn('filament', e); } } else await guard(run);
+}
+document.addEventListener('click', e=>{
+  const m = e.target.closest('#filMode button'); if (m) { S.fil.tyyp = m.dataset.t; document.querySelectorAll('#filMode button').forEach(b=>b.classList.toggle('on', b===m)); $('filScan').focus(); return; }
+  const f = e.target.closest('#filF button'); if (f) { S.fil.f = f.dataset.f; S.filLim = 200; document.querySelectorAll('#filF button').forEach(b=>b.classList.toggle('on', b===f)); renderFil(); }
+});
+function filImg(p){ return p && p.pilt ? `<img class="filimg" loading="lazy" src="/api/filament/pilt?p=${encodeURIComponent(p.pilt)}" alt="" onerror="this.style.visibility='hidden'">` : '<div class="filimg"></div>'; }
+function filSubLine(p){ return [p.tootja, p.mat, p.g ? (p.g >= 1000 ? p.g/1000 + ' kg' : p.g + ' g') : ''].filter(Boolean).join(' · '); }
+function filTeel(sku){ return S.fo && S.fo.tell ? foInc(sku) : 0; }   // v99: teel olev kogus laoseisus
+function filName(sku){ const p = S.fil.by[sku]; return p ? p.nimi : sku; }
+function renderFil(){
+  const F = S.fil; if (!F.kat) return; const st = F.st || {};
+  const teelK = (S.fo && S.fo.tell || []).reduce((t, o)=>t + (o.staatus==='ordered' ? Object.entries(o.read||{}).reduce((u, [k, v])=>u + (F.by[k] ? v : 0), 0) : 0), 0);
+  $('filSum').innerHTML = `Laos <b>${st.tooteid||0}</b> toodet, <b>${st.rulle||0}</b> rulli · väärtus ${eur(st.vaartus)} km-ta${teelK ? ` · teel <b>${teelK}</b> rulli` : ''}`
+    + (st.kataloogi_viga ? ` · <span style="color:var(--accent)">${esc(st.kataloogi_viga)}</span>` : '');
+  const q = $('filQ').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  let rows = F.kat.filter(p => (F.f==='laos' ? (F.laos[p.sku]||0) !== 0 || filTeel(p.sku) > 0 : F.f==='sp' ? !!p.ean : F.f==='er' ? p.tootja.toLowerCase().includes('eryone') : true)
+    && q.every(w => p._s.includes(w)));
+  rows.sort((a,b)=> a.tootja.localeCompare(b.tootja) || a.sari.localeCompare(b.sari) || a.nimi.localeCompare(b.nimi));
+  $('filCnt').textContent = rows.length + ' toodet';
+  const shown = rows.slice(0, S.filLim);
+  $('filBody').innerHTML = !rows.length ? `<div class="empty">${F.f==='laos' && !q.length ? 'Laos pole veel midagi. Skänni rull või impordi laoskännerist.' : 'Ei leidnud midagi.'}</div>`
+    : `<table class="fil-t"><thead><tr><th class="im"></th><th>Toode</th><th>EAN / kood</th><th class="num">Ostuhind</th><th class="num">Laos</th><th class="num">Teel</th><th></th></tr></thead><tbody>`
+    + shown.map(p=>{ const n = F.laos[p.sku]||0;
+      return `<tr data-sku="${esc(p.sku)}" onclick="if(!event.target.closest('button'))filCard(this.dataset.sku)"${S.fil.hl===p.sku?' class="hl"':''}>
+        <td class="im">${filImg(p)}</td><td><div>${esc(p.nimi)}</div><div class="sub">${esc(filSubLine(p))}</div></td>
+        <td class="sub">${esc(p.ean || p.sku)}</td><td class="num">${p.hind ? eur(p.hind) : ''}</td>
+        <td class="num q${n===0?' z':n<0?' neg':''}">${n}</td><td class="num">${filTeel(p.sku) ? `<span class="foarv teel">${filTeel(p.sku)}</span>` : ''}</td>
+        <td class="num"><button title="Eemalda 1 (parandus)" onclick="filQuick(this.closest('tr').dataset.sku,-1)">−1</button> <button title="Lisa 1 (valitud režiimis)" onclick="filQuick(this.closest('tr').dataset.sku,1)">+1</button></td></tr>`; }).join('')
+    + `</tbody></table>` + (rows.length > shown.length ? `<div style="text-align:center;margin:10px"><button onclick="S.filLim+=300;renderFil()">Näita rohkem (${rows.length-shown.length})</button></div>` : '');
+  $('filLog').innerHTML = F.liik.length ? F.liik.map(m=>`<div class="filmv" title="${esc(FIL_T[m.tyyp]||m.tyyp)} · ${esc(m.markus||'')} · ${esc(m.arvuti||'')}">
+      <span class="d ${esc(m.tyyp)}">${m.kogus>0?'+':''}${m.kogus}</span><span class="nm">${esc(filName(m.sku))}<br><span class="sub">${esc(FIL_T[m.tyyp]||m.tyyp)} · ${esc(dEE(m.aeg))} ${esc((m.aeg||'').slice(11,16))}</span></span>
+      <button title="Kustuta kanne" onclick="filDel('${esc(m.guid)}')">✕</button></div>`).join('') : '<div class="sub">Kandeid veel pole.</div>';
+}
+async function filQuick(sku, d){
+  await guard(async()=>{
+    const t = d < 0 ? (S.fil.tyyp==='sale' ? 'sale' : 'adjust') : (S.fil.tyyp==='sale' ? 'receipt' : S.fil.tyyp);
+    const j = await api('/api/filament/kanne', {json:{sku, kogus: t==='adjust' ? -1 : 1, tyyp:t, markus:'Kiirnupp'}});
+    toast(`${FIL_T[t]} ${j.kogus>0?'+':''}${j.kogus} · ${filName(sku)} (laos ${j.laos})`);
+    S.fil.hl = sku; await loadFil(false, true);
+  });
+}
+async function filScan(v){
+  const kood = (v||'').trim(); if (!kood) return; $('filScan').value = '';
+  await guard(async()=>{
+    const j = await api('/api/filament/skanni', {json:{kood, tyyp:S.fil.tyyp, kogus:1}});
+    if (j.tundmatu) return filLink(j.kood);
+    toast(`${FIL_T[S.fil.tyyp]} ${j.kogus>0?'+':''}${j.kogus} · ${j.nimi} (laos ${j.laos})`);
+    S.fil.hl = j.sku; await loadFil(false, true);
+  });
+  $('filScan').focus();
+}
+function filLink(kood, ootel){
+  S.fil.linkOotel = !!ootel; const t = ootel && (S.fil.tund||[]).find(x=>x.kood===kood);
+  $('mbox').innerHTML = `<h3>Tundmatu kood ${esc(kood)}</h3><div class="sub">Seda koodi pole kataloogis. Vali toode, millega see siduda (nt Eryone). Edaspidi tuntakse kood ära ja ${t ? `telefonist ootel ${t.kogus} tk lisatakse kohe lattu.` : `kohe lisatakse ka kanne „${esc(FIL_T[S.fil.tyyp])} +1“.`}</div>
+    <div class="qwrap" style="margin-top:10px"><input id="filLQ" placeholder="Otsi toodet…" autocomplete="off" oninput="filLinkRes('${esc(kood)}')"></div><div class="filres" id="filLR"></div>
+    <div class="mbar"><button onclick="closeModal()">Katkesta</button></div>`;
+  $('modal').classList.add('open'); filLinkRes(kood); setTimeout(()=>$('filLQ').focus(), 50);
+}
+function filLinkRes(kood){
+  const q = ($('filLQ').value||'').toLowerCase().split(/\s+/).filter(Boolean);
+  const r = S.fil.kat.filter(p => q.every(w=>p._s.includes(w))).slice(0, 60);
+  $('filLR').innerHTML = r.map(p=>`<div onclick="filLinkGo('${esc(kood)}','${esc(p.sku)}')">${filImg(p)}<span><div>${esc(p.nimi)}</div><div class="sub">${esc(filSubLine(p))} · ${esc(p.sku)}</div></span></div>`).join('') || '<div class="sub">Ei leidnud.</div>';
+}
+async function filLinkGo(kood, sku){
+  await guard(async()=>{
+    const j = await api('/api/filament/seo', {json:S.fil.linkOotel ? {kood, sku} : {kood, sku, tyyp:S.fil.tyyp, kogus:1}});
+    closeModal(); toast(`Kood seotud · ${filName(sku)}${j.ootel ? ` · telefonist +${j.ootel}` : ''} (laos ${j.laos})`); S.fil.hl = sku; await loadFil(); filTundLoad();
+  });
+}
+async function filCard(sku){
+  const p = S.fil.by[sku]; if (!p) return;
+  if (!S.fo.loaded) await loadFo(false, true);
+  await guard(async()=>{
+    const j = await api('/api/filament/ajalugu?sku=' + encodeURIComponent(sku)); const n = S.fil.laos[sku]||0;
+    $('mbox').innerHTML = `<div style="display:flex;gap:14px">${p.pilt ? `<img src="/api/filament/pilt?p=${encodeURIComponent(p.pilt)}" style="width:120px;height:120px;object-fit:contain;border-radius:8px;background:var(--soft)">` : ''}
+      <div><h3 style="margin:0 0 4px">${esc(p.nimi)}</h3><div class="sub">${esc(filSubLine(p))}</div>
+      <div class="sub">SKU ${esc(p.sku)}${p.ean ? ' · EAN ' + esc(p.ean) : ''}${j.koodid.length ? ' · õpitud koodid: ' + j.koodid.map(esc).join(', ') : ''}</div>
+      <div class="sub">${p.hind ? 'Ostuhind ' + eur(p.hind) + ' km-ta' : ''}${p.saadav ? ' · tarnijal ' + esc(p.saadav) : ''}</div>
+      <div style="margin-top:10px;display:flex;gap:8px;align-items:center">Laos <b style="font-size:20px">${n}</b>
+        <span class="sp" style="width:20px"></span>Õige kogus: <input id="filSet" type="number" value="${n}" style="width:80px">
+        <button class="green" onclick="filSet('${esc(sku)}')">Salvesta</button></div></div></div>
+      ${foCardExtra(sku)}
+      <h4 style="margin:16px 0 6px">Kanded</h4>
+      ${j.liikumised.length ? `<table class="fil-t"><tbody>${j.liikumised.map(m=>`<tr style="cursor:default"><td>${esc(dEE(m.aeg))} ${esc((m.aeg||'').slice(11,16))}</td><td>${esc(FIL_T[m.tyyp]||m.tyyp)}</td><td class="num">${m.kogus>0?'+':''}${m.kogus}</td><td class="sub">${esc(m.markus||'')} ${m.arvuti ? '· ' + esc(m.arvuti) : ''}</td></tr>`).join('')}</tbody></table>` : '<div class="sub">Kandeid pole.</div>'}
+      <div class="mbar"><button onclick="closeModal()">Sulge</button></div>`;
+    $('modal').classList.add('open');
+  });
+}
+async function filSet(sku){
+  await guard(async()=>{
+    const j = await api('/api/filament/maara', {json:{sku, uus:$('filSet').value}});
+    closeModal(); toast(j.vahe ? `Laoseis parandatud: ${j.laos} (${j.vahe>0?'+':''}${j.vahe})` : 'Laoseis ei muutunud'); S.fil.hl = sku; await loadFil();
+  });
+}
+async function filDel(guid){
+  if (!confirm('Kustutan selle kande?')) return;
+  await guard(async()=>{ await api('/api/filament/kanne/' + encodeURIComponent(guid), {method:'DELETE'}); toast('Kanne kustutatud'); await loadFil(false, true); });
+}
+/* ---------- v107 telefoniskänner (filament_tel.py, telefon samas võrgus -> https://<IP>:8766) */
+async function filTundLoad(){
+  try { const j = await api('/api/filament/telefon'); S.fil.tel = j; S.fil.tund = j.tundmatud || []; filTundRender(); } catch(e){ console.warn('telefon', e); }
+}
+function filTundRender(){
+  const L = S.fil.tund || []; const el = $('filTund'); if (!el) return;
+  el.innerHTML = L.length ? `<div class="filtund"><b>Telefonist tundmatud koodid (${L.length})</b><div class="sub" style="margin:2px 0 4px">Seo tootega, siis lähevad ootel kogused lattu.</div>`
+    + L.map(t=>`<div class="r"><span>${esc(t.kood)} · ${t.kogus} tk</span><button onclick="filLink('${esc(t.kood)}',true)">Seo</button><button class="ghost" title="Kustuta" onclick="filTundDel('${esc(t.kood)}')">✕</button></div>`).join('') + '</div>' : '';
+}
+async function filTundDel(kood){
+  if (!confirm(`Kustutan telefonist tulnud koodi ${kood} skännid?`)) return;
+  await guard(async()=>{ await api('/api/filament/tundmatu/' + encodeURIComponent(kood), {method:'DELETE'}); await filTundLoad(); });
+}
+function filQr(el, text){
+  const draw = ()=>{ el.innerHTML = ''; try { new QRCode(el, {text, width:220, height:220, correctLevel:QRCode.CorrectLevel.M}); } catch(e){ el.textContent = text; } };
+  if (window.QRCode) return draw();
+  const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  sc.onload = draw; sc.onerror = ()=>{ el.textContent = text; }; document.head.appendChild(sc);
+}
+async function filTel(){
+  await guard(async()=>{
+    const j = await api('/api/filament/telefon'); S.fil.tel = j; S.fil.tund = j.tundmatud || []; filTundRender();
+    $('mbox').innerHTML = `<h3>📱 Telefoniskänner</h3>`
+      + (j.tootab && j.pilv ? `<div class="sub">Skänni see QR-kood telefoni kaameraga. Skänner töötab igal pool, kus on internet (ladu.3dmarket.ee), sertifikaati pole vaja. Safaris Jaga → Lisa avakuvale, siis on skänner ühe puudutusega käes.</div>
+        <div style="display:flex;gap:18px;align-items:center;margin:14px 0"><div id="filQR" style="background:#fff;padding:10px;border-radius:8px;width:220px;height:220px"></div>
+        <div class="sub" style="flex:1">Skänner: <a href="${esc(j.skanner)}" target="_blank">${esc(j.skanner.split('#')[0])}</a><br><br>Iga skänn läheb kohe laoserverisse ja on siin Filament-vaates paari sekundiga näha.</div></div>`
+      : j.tootab ? `<div class="sub">Telefon peab olema arvutiga samas võrgus (WiFi). Skänni see QR-kood iPhone'i kaameraga ja järgi juhendit. Esimesel korral paigaldad sertifikaadi (umbes 2 minutit), edaspidi avad skänneri avakuvalt.</div>
+        <div style="display:flex;gap:18px;align-items:center;margin:14px 0"><div id="filQR" style="background:#fff;padding:10px;border-radius:8px;width:220px;height:220px"></div>
+        <div class="sub" style="flex:1">Juhend: <a href="${esc(j.juhend)}" target="_blank">${esc(j.juhend.split('#')[0])}</a><br>Skänner: ${esc(j.skanner.split('#')[0])}<br><br>Kui telefon ei saa ühendust: Windows võib küsida tulemüüri luba Pythonile, vajuta <b>Luba</b> (ka „Avalik võrk“, kui küsitakse).</div></div>`
+        : `<div class="sub" style="color:var(--accent)">Skänneri server ei käivitunud: ${esc(j.viga || 'tundmatu viga')}</div>`)
+      + `<div class="mbar"><button onclick="closeModal()">Sulge</button></div>`;
+    $('modal').classList.add('open'); if (j.tootab) filQr($('filQR'), j.juhend);
+  });
+}
+setInterval(async()=>{   // telefoni skännid ilmuvad Filament-vaatesse ise
+  if (document.hidden || !$('app').classList.contains('fil-mode') || !S.fil.kat) return;
+  try { const j = await fetch('/api/filament/muutus').then(r=>r.json()); if (!j.ok) return;
+    if (S.fil.sig && j.sig !== S.fil.sig) { await loadFil(false, true); if ((S.fil.tund||[]).length !== j.tundmatuid || j.tundmatuid) filTundLoad(); }
+    if (!S.fil.sig) filTundLoad();
+    S.fil.sig = j.sig; } catch(e){}
+}, 4000);
+
+async function filImport(btn){
+  btn.disabled = true; const old = btn.textContent; btn.innerHTML = '<span class="spin"></span> Impordin…';
+  await guard(async()=>{
+    const j = await api('/api/filament/impordi', {method:'POST'});
+    toast(j.lisatud || j.tellimusi ? `Laoskännerist toodi ${j.lisatud} kannet${j.tellimusi ? ' ja ' + j.tellimusi + ' tellimust' : ''}` : 'Uusi kandeid polnud – kõik on juba sees'); await loadFil(); if (S.fo.loaded) loadFo(false, true);
+  });
+  btn.disabled = false; btn.textContent = old;
+}
+
+/* ---------- 3D filamendi tellimine (v85): sama loogika mis laoskänneri Tellimine-lehel */
+S.fo = {loaded:false, ord:{}, hinnad:{}, tell:[], seaded:{}, ton:null, f:'sug', edit:{}, deal:{}, conf:false};
+S.filView = 'laos';
+const FO_COLW = /\b(red|gold|black|green|purple|blue|yellow|orange|pink|white|silver|copper|grey|gray|brown|cyan|magenta|violet|bronze|rose)\b/i;
+const FO_GORDER = ['PLA Standard','PLA matte','PLA+','PLA Silk','PLA Silk multi','PLA High Speed','PLA meta','PLA Galaxy','PLA Marble / Wood','PLA Glow in dark','PLA Carbon Fiber','PETG Standard','PETG matte','PETG Carbon Fiber','ABS+','ASA','TPU','PA12','PA12 + CF15','Toonerid'];
+const FO_GLABEL = {'PLA Standard':'PLA','PLA matte':'PLA matt','PLA Silk multi':'PLA Silk Dual / Tri Color / Rainbow','PETG Standard':'PETG','PETG matte':'PETG matt','PETG Carbon Fiber':'PETG + CF','PLA Glow in dark':'PLA helendav'};
+const fmtE = n => Number(n||0).toLocaleString('et-EE', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+function filSetView(v){
+  S.filView = v;
+  document.querySelectorAll('#filViews button').forEach(b=>b.classList.toggle('on', b.dataset.v===v));
+  ['laos','ord','cart','teel'].forEach(x=>$('filV-'+x).classList.toggle('on', x===v));
+  document.querySelector('section.fil').classList.toggle('notlaos', v!=='laos');
+  if (v !== 'laos') { if (!S.fo.loaded) loadFo(); else renderFo(); }
+}
+document.addEventListener('click', e=>{ const b = e.target.closest('#filViews button'); if (b) filSetView(b.dataset.v);
+  const f = e.target.closest('#foF button'); if (f) { S.fo.f = f.dataset.f; document.querySelectorAll('#foF button').forEach(x=>x.classList.toggle('on', x===f)); renderFo(); } });
+
+async function loadFo(fresh, quiet){
+  const run = async()=>{
+    if (!S.fil.kat) await loadFil(false, true);
+    const j = await api('/api/filament/tellimine' + (S.fo.ton && !fresh ? '' : '?toonerid=1'));
+    Object.assign(S.fo, {loaded:true, ord:j.ord||{}, hinnad:j.hinnad||{}, kontrollitud:j.kontrollitud, hist_to:j.hist_to, puudu:j.failid_puudu||[], tell:j.tellimused||[], seaded:j.seaded||{}});
+    if (j.toonerid) { S.fo.ton = j.toonerid.map(t=>{ const own = [t.n,t.b,t.id,t.d||''].join(' ').toLowerCase(), px = ((t.px||'')+' '+(t.pr||'')).toLowerCase();
+      return Object.assign(t, {_o:own, _s:own+' '+px, _c:(own+' '+px).replace(/[^a-z0-9]/g,''), _oc:own.replace(/[^a-z0-9]/g,'')}); }); }
+    foMerge(); foTwins(); renderFo(); if ((S.filView||'laos')==='laos') renderFil();   // v99: laoseisus ka teel olev kogus
+    let ns = 0; S.fil.kat.forEach(p=>{ if (!foSup(p)) return; const pl = foPlan(p.sku); if (pl.sug && pl.pick && pl.pick.sku===p.sku) ns++; });
+    $('filN').textContent = ns || ''; $('filN').title = ns ? ns + ' toodet vaja tellida' : '';
+    if (fresh && !quiet) toast('Andmed laetud' + (S.fo.kontrollitud ? ' (hinnad kontrollitud ' + foT(S.fo.kontrollitud) + ')' : ''));
+  };
+  if (quiet) { try { await run(); } catch(e){ console.warn('tellimine', e); } } else await guard(run);
+}
+function foMerge(){   // ORD = ostuajalugu + praegused hinnad/saadavus + toonerid
+  const O = {}; for (const [k,v] of Object.entries(S.fo.ord)) O[k] = Object.assign({}, v);
+  for (const [k,v] of Object.entries(S.fo.hinnad)) { const o = O[k] = O[k] || {}; o.p = v.p; o.av = v.av; o.nx = v.nx; }
+  (S.fo.ton||[]).forEach(t=>{ const o = O[t.id] = O[t.id] || {}; o.p = t.p; o.av = t.av; o.nx = t.nx; o.kg = 0.7; });
+  S.fo.O = O;
+}
+/* Prof Lab <-> Smart Print paarid (sama sari, materjal, värv, kaal, läbimõõt) ja PLA -> sama värvi PLA+ */
+function foTwins(){
+  if (S.fo.twinsFor === S.fil.katM) return; S.fo.twinsFor = S.fil.katM;
+  const tw = S.fo.tw = new Map(), pm = S.fo.plus = new Map(), pr = S.fo.plusRev = new Map();
+  const wOf = p => { const m = String(p.nimi||'').match(/(\d+(?:[.,]\d+)?)\s*kg/i); return m ? Math.round(parseFloat(m[1].replace(',','.'))*1000) : p.g; };
+  const cl = p => String(p.varv||'').replace(/\d+(?:[.,]\d+)?\s*kg/i,'').toLowerCase().replace(/\s+/g,' ').trim();
+  const g = new Map(), k = p => [p.sari, p.mat, cl(p), wOf(p), p.d].map(x=>String(x||'').toLowerCase().replace(/\s+/g,' ').trim()).join('|');
+  S.fil.kat.forEach(p=>{ if (p.tootja==='Professional Lab' || p.tootja==='Smart Print') { const key = k(p); (g.get(key) || g.set(key, []).get(key)).push(p); } });
+  g.forEach(v=>{ if (v.length===2 && v[0].tootja!==v[1].tootja) { tw.set(v[0].sku, v[1]); tw.set(v[1].sku, v[0]); } });
+  const ck = p => [p.tootja, cl(p), wOf(p), p.d].join('|'), pp = new Map();
+  S.fil.kat.forEach(p=>{ if (p.sari==='PLA+') pp.set(ck(p), p); });
+  S.fil.kat.forEach(p=>{ if (p.sari==='PLA Standard') { const x = pp.get(ck(p)); if (x) { pm.set(p.sku, x); if (!pr.has(x.sku)) pr.set(x.sku, []); pr.get(x.sku).push(p.sku); } } });
+}
+const foP = id => S.fil.by[id];
+const foShort = p => p.tootja==='Professional Lab' ? 'Prof Lab' : p.tootja;
+const foOn = id => S.fil.laos[id] || 0;
+const foO = id => (S.fo.O||{})[id] || {};
+const foIsOut = id => foO(id).av === '0';
+const foSup = p => p && (p.tootja==='Professional Lab' || p.tootja==='Smart Print');
+const foRules = () => Object.assign({low:10, cover:30}, S.fo.seaded.reeglid || {});
+const foDraft = () => { const d = S.fo.tell.find(o=>o.guid==='draft-sp'); return (d && d.read) || {}; };
+function foInc(id){ let n = 0; S.fo.tell.forEach(o=>{ if (o.staatus==='ordered') n += (o.read||{})[id] || 0; }); return n; }
+const foPerMonth = id => { const o = foO(id); return o.m12 ? ((o.m12||0)/12 + (o.m3||0)/3)/2 : 0; };
+function foNoSug(id){ const p = foP(id); if (!p || !/(dual|tri) colou?r/i.test(p.nimi) || /army/i.test(p.nimi)) return false;   // Timo: ilma värvinimedeta Dual/Tri Color – ei soovita (erand Army)
+  const rest = (p.nimi.split(/colou?r/i)[1] || '').split('|')[0]; return !FO_COLW.test(rest); }
+function foGroup(id){ const p = foP(id), t = S.fo.tw.get(id); if (!p) return []; if (!t) return [p]; return p.tootja==='Professional Lab' ? [p, t] : [t, p]; }
+const foGKey = id => (foGroup(id)[0] || {sku:id}).sku;
+const foGSum = (id, fn) => foGroup(id).reduce((t, p)=>t + fn(p.sku), 0);
+const foPref = id => !!((S.fo.seaded['pref:' + foGKey(id)] || {}).smart);
+function foPick(id){ const g = foGroup(id); if (g.length < 2) return g[0];
+  const [pl, sp] = g, wantSp = foPref(id), first = wantSp ? sp : pl, second = wantSp ? pl : sp, a = foO(first.sku), b = foO(second.sku);
+  return a.av === '0' && b.av && b.av !== '0' ? second : first; }
+const foPla = id => foGroup(id).flatMap(x=>S.fo.plusRev.get(x.sku) || []);
+const foGMonth = id => foGSum(id, foPerMonth) + foPla(id).reduce((t, x)=>t + foPerMonth(x), 0);
+function foAuto(id){ const r = foRules(), n = foGSum(id, x=>foO(x).n || 0) + foPla(id).reduce((t, x)=>t + (foO(x).n || 0), 0), d = foGMonth(id)/30;
+  if (!d) return {min:0, target:0}; if (n < 3) return {min:0, target:1};
+  const min = Math.ceil(d * r.low); return {min, target: Math.max(min + 1, Math.ceil(d * r.cover))}; }
+function foMM(id){ for (const p of foGroup(id)) { const m = S.fo.seaded['mm:' + p.sku]; if (m) return m; } return S.fo.seaded['mm:' + id]; }
+function foPlan(id, depth){
+  const g = foGroup(id), mm = foMM(id), a = foAuto(id);
+  const min = mm && mm.min != null ? mm.min : a.min, target = mm && mm.target != null ? mm.target : a.target;
+  const inc = foGSum(id, foInc), stock = foGSum(id, foOn), have = stock + inc;
+  let need = target > 0 && have <= min ? Math.max(1, target - have) : 0, plusSub = false;
+  const pick = foPick(id) || foP(id);
+  if (g.some(x=>foNoSug(x.sku)) || foNoSug(id)) need = 0;
+  // PLA: kui sellel värvil on PLA+, soovitan PLA+-i. PLA ainult siis, kui PLA+ on meil otsas (ka teel pole) ja tarnijal mõlemad PLA+ variandid otsas.
+  const plus = S.fo.plus.get((g[0]||{}).sku) || S.fo.plus.get(id) || null;
+  if (plus && !depth) { const pp = foPlan(plus.sku, 1);
+    if (pp.have > 0 || !pp.g.every(x=>foIsOut(x.sku))) need = 0; else { plusSub = true; need = Math.max(need, pp.blocked || 0); } }
+  const blocked = need && pick && foIsOut(pick.sku) ? need : 0;
+  return {min, target, inc, stock, have, sug: blocked ? 0 : need, blocked, manual: !!mm, auto: a, g, pick, plus, plusSub};
+}
+function foGrpKey(p){ if (!p || p.toner) return 'Toonerid'; const s = p.sari || p.mat || 'Muu'; return s==='PLA Silk' && /dual|tri color|rainbow/i.test(p.nimi) ? 'PLA Silk multi' : s; }
+function foGrpSt(t){ S.fo.gst = S.fo.gst || {}; if (!S.fo.gst[t]) { try { S.fo.gst[t] = JSON.parse(localStorage.getItem('filgrp-' + t) || '{}'); } catch(e){ S.fo.gst[t] = {}; } } return S.fo.gst[t]; }
+function foGrouped(t, items, getP, rowFn, cols, sumFn, defOpen, force){
+  const m = new Map(); items.forEach(it=>{ const k = foGrpKey(getP(it)); if (!m.has(k)) m.set(k, []); m.get(k).push(it); });
+  const ix = k => { const i = FO_GORDER.indexOf(k); return i < 0 ? 99 : i; }, st = foGrpSt(t);
+  return [...m.keys()].sort((a, b)=>ix(a) - ix(b) || a.localeCompare(b)).map(k=>{ const arr = m.get(k), open = force || (st[k] ?? defOpen);
+    return `<tr class="filgrp${open ? ' open' : ''}" data-t="${t}" data-g="${esc(k)}"><td colspan="${cols}"><span class="gar">▸</span><b>${esc(FO_GLABEL[k] || k)}</b><span class="gsum">${sumFn(arr)}</span></td></tr>`
+      + arr.map(rowFn).join('').replace(/<tr /g, `<tr data-grp="${esc(k)}"${open ? '' : ' hidden'} `); }).join('');
+}
+function foGrpToggle(t, k, open){ foGrpSt(t)[k] = open; try { localStorage.setItem('filgrp-' + t, JSON.stringify(foGrpSt(t))); } catch(e){}
+  document.querySelectorAll(`tr.filgrp[data-t="${t}"]`).forEach(h=>{ if (h.dataset.g===k) { h.classList.toggle('open', open); let r = h.nextElementSibling; while (r && !r.classList.contains('filgrp')) { r.hidden = !open; r = r.nextElementSibling; } } }); }
+function foGrpAll(t, open){ document.querySelectorAll(`tr.filgrp[data-t="${t}"]`).forEach(h=>foGrpToggle(t, h.dataset.g, !!open)); }
+document.addEventListener('click', e=>{ const h = e.target.closest('tr.filgrp'); if (h) foGrpToggle(h.dataset.t, h.dataset.g, !h.classList.contains('open')); });
+
+const foTonP = id => { const t = (S.fo.ton||[]).find(x=>x.id===id); return t ? {sku:id, nimi:t.n, tootja:t.b, toner:true} : null; };
+const foProd = id => foP(id) || foTonP(id);
+const foLines = read => Object.entries(read).map(([id, q])=>({p: foProd(id) || {sku:id, nimi:id}, q})).sort((a, b)=>a.p.nimi.localeCompare(b.p.nimi));
+function foTot(lines){ let tk = 0, eur = 0, kg = 0; lines.forEach(({p, q})=>{ const o = foO(p.sku); tk += q; eur += q * (o.p || 0); kg += q * (o.kg || (p.g ? p.g/1000*1.3 : 1.3)); }); return {tk, eur, kg}; }
+const foBigKg = p => { const m = String(p.nimi||'').match(/(\d+(?:[.,]\d+)?)\s*kg/i), kg = m ? parseFloat(m[1].replace(',','.')) : (+p.g||0)/1000; return kg >= 2 ? kg : 0; };
+const foPerKg = (p, pr) => { const kg = !p.toner && foBigKg(p); return kg && pr ? `<div class="sub">${fmtE(pr/kg)} €/kg</div>` : ''; };
+const foT = t => { const d = new Date(String(t).replace(' ', 'T')); return isNaN(d) ? '–' : d.toLocaleString('et-EE', {day:'numeric', month:'numeric', hour:'2-digit', minute:'2-digit'}); };
+const foAgeH = t => { const d = new Date(String(t).replace(' ', 'T')); return isNaN(d) ? 1e9 : (Date.now() - d)/36e5; };
+
+async function foSetDraft(read){
+  const d = S.fo.tell.find(o=>o.guid==='draft-sp'); if (d) d.read = read; else S.fo.tell.push({guid:'draft-sp', nimi:'draft-sp', staatus:'draft', read});
+  renderFo();
+  await guard(()=>api('/api/filament/mustand', {json:{read}}));
+}
+function foAdd(id, q){ if (q > 0 && foIsOut(id)) return toast('Tarnijal otsas, ei saa tellida', true);
+  const l = Object.assign({}, foDraft()); l[id] = Math.max(0, (l[id] || 0) + q); if (!l[id]) delete l[id]; foSetDraft(l); }
+async function foSeade(voti, vaartus){ await guard(async()=>{ const j = await api('/api/filament/seade', {json:{voti, vaartus}}); S.fo.seaded = j.seaded; renderFo(); }); }
+
+function renderFo(){
+  if (!S.fo.loaded || !S.fil.kat) return;
+  const dl = foDraft(), n = Object.keys(dl).length;
+  $('foCartN').textContent = n || ''; const nt = S.fo.tell.filter(o=>o.staatus==='ordered').length; $('foTeelN').textContent = nt || '';
+  if (S.filView==='ord') renderFoOrd(); else if (S.filView==='cart') renderFoCart(); else if (S.filView==='teel') renderFoTeel();
+}
+function renderFoOrd(){
+  const act = document.activeElement, busy = act && act.closest && act.closest('#foList, #foDeals') && act.tagName==='INPUT';
+  let nSug = 0, inc = 0, val = 0; const rows = [], dl = foDraft();
+  S.fil.kat.forEach(p=>{ const o = foO(p.sku); inc += foInc(p.sku); val += Math.max(0, foOn(p.sku)) * (o.p || p.hind || 0);
+    if (!foSup(p)) return; const pl = foPlan(p.sku), isPick = pl.pick && pl.pick.sku===p.sku; if (pl.sug && isPick) nSug++; rows.push([p, pl, isPick]); });
+  $('foSugN').textContent = nSug; $('foIncN').textContent = inc; $('foVal').textContent = Math.round(val).toLocaleString('et-EE');
+  $('foInfo').textContent = `Hinnad ja saadavus kontrollitud ${foT(S.fo.kontrollitud)} · ostuajalugu kuni ${S.fo.hist_to ? dEE(S.fo.hist_to) : '–'}`;
+  const h = foAgeH(S.fo.kontrollitud);
+  $('foNote').innerHTML = (S.fo.puudu.length ? `<div class="filnote">Andmefailid puuduvad: ${esc(S.fo.puudu.join(', '))} (kaust Dropbox\\3dmarket claude\\skanner).</div>` : '')
+    + (S.fo.kontrollitud && h >= 6 ? `<div class="filnote">Hinnad on ${h > 48 ? Math.round(h/24) + ' päeva' : Math.round(h) + ' tundi'} vanad. Värsked hinnad tõmbab Claude: kirjuta projektis „kontrolli hinnad“ ja vajuta siis „Uuenda andmed“.</div>` : '');
+  renderFoDraft(); renderFoRules();
+  if (!busy) renderFoDeals();
+  if (busy) return;
+  const terms = $('foQ').value.trim().toLowerCase().split(/\s+/).filter(Boolean), f = S.fo.f;
+  let list = rows.filter(([p, pl, isPick])=>(!terms.length || terms.every(t=>p._s.includes(t))) && (f==='all' || (f==='sug' ? isPick && (pl.sug > 0 || pl.blocked > 0) : pl.target > 0 || foGMonth(p.sku) > 0)));
+  list.sort((a, b)=>f==='sug' ? ((!a[1].sug) - (!b[1].sug)) || (b[1].sug - a[1].sug) || (foGMonth(b[0].sku) - foGMonth(a[0].sku)) : (foGMonth(b[0].sku) - foGMonth(a[0].sku)) || (b[2] - a[2]) || a[0].nimi.localeCompare(b[0].nimi));
+  const sugQty = list.reduce((t, [, pl, isPick])=>t + (isPick ? pl.sug : 0), 0), nb = list.filter(r=>r[1].blocked).length;
+  $('foAddAll').style.display = f==='sug' && list.length ? '' : 'none';
+  $('foListNote').textContent = f==='sug' && list.length ? `${list.filter(r=>r[1].sug).length} toodet, kokku ${sugQty} tk.${nb ? ` Lisaks ${nb} toodet oleks vaja, aga need on tarnijal otsas (neid ei soovita).` : ''} Prof Labi ja Smart Printi paaril arvestab soovitus laoseisu, teel olevat kogust ja kulu mõlema peale kokku. Soovitus läheb Prof Labile, v.a kui on märgitud „eelistan Smart Print“ või Prof Lab on tarnijal otsas.` : '';
+  if (!list.length) { $('foList').innerHTML = `<div class="empty" style="margin-top:40px">${f==='sug' ? (Object.keys(S.fo.ord).length ? 'Praegu pole midagi vaja tellida.' : 'Ostuajalugu (tellimine.json) puudub.') : 'Selles vaates tooteid pole.'}</div>`; return; }
+  $('foList').innerHTML = `<table class="fil-t"><thead><tr><th class="im"></th><th>Toode</th><th class="num">Laos</th><th class="num">Teel</th><th class="num">Min / siht</th><th class="num">Kulu kuus</th><th class="num" title="Ostuhind km-ta, ilma transpordita">Hind</th><th>Tarnijal</th><th class="num" style="text-align:center">Soovitus, tk</th><th class="num">Tellimuses</th><th></th></tr></thead><tbody>`
+    + foGrouped('ord', list, r=>r[0], ([p, pl, isPick])=>{ const pm = foPerMonth(p.sku), inD = dl[p.sku] || 0, n = foOn(p.sku), o = foO(p.sku);
+      const tw = pl.g.find(x=>x.sku!==p.sku), split = tw && foOn(tw.sku) ? `paar ${pl.stock}` : '';
+      const auto = isPick ? pl.sug : 0, v = S.fo.edit[p.sku] != null ? S.fo.edit[p.sku] : auto;
+      const sugc = foIsOut(p.sku) ? `<span class="warnt">${isPick && pl.blocked ? 'vaja ' + pl.blocked + ' tk,<br>' : ''}otsas, ei saa tellida</span>`
+        : `<span class="fdq"><button data-sd="-1">−</button><input value="${v}" data-sq${auto ? '' : ' class="z"'}><button data-sd="1">+</button></span>${v !== auto ? `<div class="sub">soovitus ${auto}</div>` : ''}${foNoSug(p.sku) ? '<div class="sub">ei soovita (nimes pole värve)</div>' : ''}${pl.plus && isPick ? `<div class="sub">${pl.plusSub ? 'PLA+ otsas, seega PLA' : 'eelistan PLA+'}</div>` : ''}`;
+      return `<tr data-id="${esc(p.sku)}"><td class="im">${filImg(p)}</td><td><div>${esc(p.nimi)}</div><div class="sub">${esc(p.sku)}${tw && !isPick ? ' · soovitus läheb paarilisele' : ''}</div></td>
+        <td class="num${n ? '' : ' sub'}">${n}${split ? `<div class="sub">${esc(split)}</div>` : ''}</td><td class="num${pl.inc ? '' : ' sub'}">${pl.inc ? '+' + pl.inc : '–'}</td>
+        <td class="num sub">${pl.target ? pl.min + ' / ' + pl.target + (pl.manual ? '*' : '') : '–'}</td><td class="num sub">${pm ? (pm < 1 ? pm.toFixed(1) : Math.round(pm)) : '–'}</td>
+        <td class="num">${o.p ? fmtE(o.p) + foPerKg(p, o.p) : '–'}</td><td class="sub">${o.av==='0' ? `<span class="warnt">otsas${o.nx ? ', tuleb ' + esc(o.nx) : ''}</span>` : esc(o.av || '')}</td>
+        <td class="sugc">${sugc}</td><td class="num">${inD ? `<span class="inord">${inD}</span>` : '<span class="sub">–</span>'}</td>
+        <td>${foIsOut(p.sku) ? '<button disabled>Otsas</button>' : `<button class="${inD ? '' : 'green'}" data-add="${esc(p.sku)}">Lisa</button>`}</td></tr>`
+        + (tw ? `<tr class="vrow" data-id="${esc(p.sku)}"><td></td><td colspan="10">${foVars(p, pl, isPick)}</td></tr>` : ''); },
+      11, arr=>{ const ns = arr.filter(r=>r[2] && r[1].sug).length, tk = arr.reduce((t, r)=>t + (r[2] ? r[1].sug : 0), 0), nb = arr.filter(r=>r[2] && r[1].blocked).length, io = arr.reduce((t, r)=>t + (dl[r[0].sku] || 0), 0);
+        return (f==='sug' ? `${ns} toodet, ${tk} tk${nb ? ` · ${nb} tarnijal otsas` : ''}` : `${arr.length} toodet${ns ? ` · ${ns} soovitust, ${tk} tk` : ''}`) + (io ? ` · <span class="inord">tellimuses ${io} tk</span>` : ''); }, false, terms.length > 0)
+    + '</tbody></table>';
+}
+function foVars(p, pl, isPick){
+  const g = pl.g; if (g.length < 2) return '';
+  const wantSp = foPref(p.sku), prefP = wantSp ? g[1] : g[0], pick = pl.pick;
+  const one = x => { const o = foO(x.sku), out = o.av==='0', chosen = pick && pick.sku===x.sku;
+    return `<span class="fvar${chosen ? ' on' : ''}${out ? ' out' : ''}"><b>${chosen ? '✓ ' : ''}${esc(foShort(x))}</b><span>${o.p ? fmtE(o.p) + ' €' : '–'}</span><span>${out ? 'tarnijal otsas' + (o.nx ? ', tuleb ' + esc(o.nx) : '') : 'tarnijal ' + esc(o.av || '?')}</span><span>meil laos <b>${foOn(x.sku)}</b></span>${x.sku!==p.sku && isPick && !out ? `<button data-add="${esc(x.sku)}" title="Lisa hoopis see variant">Lisa see</button>` : ''}</span>`; };
+  const why = pl.blocked ? `<span class="fvwhy">Vaja ${pl.blocked} tk, aga ${g.every(x=>foIsOut(x.sku)) ? 'mõlemad variandid on' : esc(foShort(pick)) + ' on'} tarnijal otsas, seega praegu ei soovita.</span>`
+    : pick && pick.sku!==prefP.sku ? `<span class="fvwhy">Soovitus läheb ${esc(foShort(pick))}ile, sest ${esc(foShort(prefP))} on tarnijal otsas.</span>` : '';
+  const pw = pl.plus ? `<span class="sub">${pl.plusSub ? 'Sama värvi PLA+ on meil otsas ja tarnijal mõlemad PLA+ variandid otsas, seega soovitan PLA-d.' : `Sellel värvil on PLA+ (${esc(pl.plus.nimi.replace(/ \|.*/, ''))}), soovitan seda.`}</span>` : '';
+  return `<div class="fvars">${g.map(one).join('')}<span>eelistan<span class="fpf"><button data-pref="${esc(p.sku)}" data-v="0" class="${wantSp ? '' : 'on'}">Prof Lab</button><button data-pref="${esc(p.sku)}" data-v="1" class="${wantSp ? 'on' : ''}">Smart Print</button></span></span>${why}${pw}</div>`;
+}
+document.addEventListener('click', e=>{
+  if (!e.target.closest('#filV-ord')) return;
+  const sd = e.target.closest('#foList button[data-sd]'); if (sd) { const tr = sd.closest('tr'), inp = tr.querySelector('input[data-sq]'), n = Math.max(0, (parseInt(inp.value) || 0) + +sd.dataset.sd); inp.value = n; inp.classList.remove('z'); S.fo.edit[tr.dataset.id] = n; return; }
+  const pf = e.target.closest('button[data-pref]'); if (pf) { const k = foGKey(pf.dataset.pref); foSeade('pref:' + k, pf.dataset.v==='1' ? {smart:true} : null); toast(pf.dataset.v==='1' ? 'Selle filamendi puhul eelistan Smart Printi' : 'Selle filamendi puhul eelistan Prof Labi'); return; }
+  const b = e.target.closest('#foList button[data-add]');
+  if (b) { const id = b.dataset.add, btr = b.closest('tr'), main = btr.classList.contains('vrow') ? btr.previousElementSibling : btr, inp = main && main.querySelector('input[data-sq]'), q = Math.max(1, parseInt(inp && inp.value) || 0);
+    delete S.fo.edit[main ? main.dataset.id : id]; foAdd(id, q); toast(`Lisatud tellimusele ${q} tk`); return; }
+  const tr = e.target.closest('#foList tr[data-id]:not(.vrow)'); if (tr && !e.target.closest('button,input')) filCard(tr.dataset.id);
+});
+document.addEventListener('input', e=>{ if (e.target.matches('#foList input[data-sq]')) S.fo.edit[e.target.closest('tr').dataset.id] = Math.max(0, parseInt(e.target.value) || 0);
+  if (e.target.matches('#foDeals input[data-dq]')) S.fo.deal[e.target.closest('tr').dataset.id] = Math.max(0, parseInt(e.target.value) || 0); });
+function foAddAll(){ const l = Object.assign({}, foDraft()); let n = 0;
+  S.fil.kat.forEach(p=>{ if (!foSup(p) || foGKey(p.sku)!==p.sku) return; const pl = foPlan(p.sku);
+    if (pl.g.some(x=>S.fo.edit[x.sku] != null)) { pl.g.forEach(x=>{ const q = S.fo.edit[x.sku]; if (q > 0 && !l[x.sku] && !foIsOut(x.sku)) { l[x.sku] = q; n++; } }); return; }
+    if (pl.sug && !pl.g.some(x=>l[x.sku])) { l[pl.pick.sku] = pl.sug; n++; } });
+  S.fo.edit = {}; foSetDraft(l); toast(n ? `Lisatud ${n} toodet` : 'Kõik soovitused on juba tellimuses'); }
+function renderFoDeals(){
+  const H = S.fo.hinnad, list = S.fil.kat.filter(p=>foSup(p) && H[p.sku] && H[p.sku].u && H[p.sku].p <= H[p.sku].u * 0.95 && H[p.sku].av!=='0' && !foNoSug(p.sku)).sort((a, b)=>H[a.sku].p/H[a.sku].u - H[b.sku].p/H[b.sku].u);
+  $('foDealsW').hidden = !list.length; if (!list.length) return; const dl = foDraft();
+  $('foDealsN').textContent = `${list.length} filamenti, kuni −${Math.max(...list.map(p=>Math.round((1 - H[p.sku].p/H[p.sku].u)*100)))}%`;
+  $('foDealsNote').textContent = `Vähemalt 5% odavam kui tavaliselt. Tavaline hind = sinu viimase 12 kuu ostude mediaanhind (ostmata toodetel portaali varasem hind). Kontrollitud ${foT(S.fo.kontrollitud)}.`;
+  $('foDeals').innerHTML = `<table class="fil-t"><thead><tr><th class="im"></th><th>Toode</th><th class="num">Tavaline</th><th class="num">Praegu</th><th class="num">Odavam</th><th>Tarnijal</th><th class="num">Laos</th><th class="num">Tellimuses</th><th class="num">Lisa kogus</th></tr></thead><tbody>`
+    + foGrouped('deals', list, p=>p, p=>{ const v = H[p.sku], pct = Math.round((1 - v.p/v.u)*100), q = S.fo.deal[p.sku] || 0;
+      return `<tr data-id="${esc(p.sku)}" style="cursor:default"><td class="im">${filImg(p)}</td><td><div>${esc(p.nimi)}</div><div class="sub">${esc(p.sku)}</div></td>
+        <td class="num sub" style="text-decoration:line-through">${fmtE(v.u)}${foPerKg(p, v.u)}</td><td class="num" style="color:var(--ok);font-weight:700">${fmtE(v.p)} €${foPerKg(p, v.p)}</td><td class="num" style="color:var(--ok)">−${pct}%</td>
+        <td class="sub">${esc(v.av || '')}</td><td class="num sub">${foOn(p.sku)}</td><td class="num">${dl[p.sku] ? `<span class="inord">${dl[p.sku]}</span>` : '–'}</td>
+        <td class="num"><span class="fdq"><button data-dd="-1">−</button><input value="${q}" data-dq><button data-dd="1">+</button></span></td></tr>`; },
+      9, arr=>`${arr.length} toodet · kuni −${Math.max(...arr.map(p=>Math.round((1 - H[p.sku].p/H[p.sku].u)*100)))}%`, false) + '</tbody></table>';
+}
+document.addEventListener('click', e=>{ const b = e.target.closest('#foDeals button[data-dd]'); if (!b) return; const tr = b.closest('tr'), id = tr.dataset.id, n = Math.max(0, (S.fo.deal[id] || 0) + +b.dataset.dd); S.fo.deal[id] = n; tr.querySelector('input').value = n; });
+function foDealsAdd(){ const l = Object.assign({}, foDraft()); let n = 0, tk = 0;
+  for (const [id, q] of Object.entries(S.fo.deal)) if (q > 0 && !foIsOut(id)) { l[id] = (l[id] || 0) + q; n++; tk += q; }
+  if (!n) return toast('Sisesta enne kogus', true); S.fo.deal = {}; if (document.activeElement) document.activeElement.blur(); foSetDraft(l); toast(`Tellimusse lisatud ${n} toodet, ${tk} tk`); }
+function renderFoDraft(){
+  const lines = foLines(foDraft()), t = foTot(lines);
+  $('foDraft').innerHTML = `<div class="t">Avatud tellimus: Smartprint24</div><div style="margin:4px 0">${lines.length ? `${lines.length} toodet, <b>${t.tk}</b> tk · <b>${fmtE(t.eur)} €</b> km-ta · ~${Math.round(t.kg)} kg` : 'tühi'}</div>`
+    + (lines.length ? `<button class="green" onclick="filSetView('cart')">Vaata ja kinnita tellimus →</button>` : '<div class="sub">Lisa tooteid vasakult nupuga „Lisa“ või otsi allpool.</div>');
+  if ($('foDS').value) foDraftSearch(); if ($('foTS').value) foTonerSearch();
+}
+const foAddBtn = id => { if (foIsOut(id)) return '<button disabled>Otsas</button>'; const n = foDraft()[id]; return `<button class="${n ? '' : 'green'}" data-fadd="${esc(id)}">${n ? `Lisa veel (${n})` : 'Lisa'}</button>`; };
+function foDraftSearch(){
+  const q = $('foDS').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!q.length) { $('foDR').innerHTML = ''; return; }
+  const list = S.fil.kat.filter(p=>foSup(p) && q.every(w=>p._s.includes(w))).slice(0, 20);
+  $('foDR').innerHTML = list.length ? list.map(p=>{ const o = foO(p.sku); return `<div class="ri">${filImg(p)}<div class="x"><div>${esc(p.nimi)}</div><div class="sub">${o.p ? fmtE(o.p) + ' €' : 'hind puudub'} · ${o.av==='0' ? '<span class="warnt">tarnijal otsas</span>' : 'tarnijal ' + esc(o.av || '?')} · laos ${foOn(p.sku)}</div></div>${foAddBtn(p.sku)}</div>`; }).join('') : '<div class="sub">Midagi ei leitud.</div>';
+}
+function foTonerSearch(){
+  const raw = $('foTS').value.trim(), res = $('foTR'); if (!raw) { res.innerHTML = ''; return; }
+  if (!S.fo.ton || !S.fo.ton.length) { res.innerHTML = '<div class="sub">Tooneri nimekiri (toonerid.json) puudub.</div>'; return; }
+  const terms = raw.toLowerCase().split(/\s+/).filter(Boolean), qc = raw.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const hit = t => terms.every(x=>t._s.includes(x)) || (qc.length >= 4 && t._c.includes(qc)), own = t => terms.every(x=>t._o.includes(x)) || (qc.length >= 4 && t._oc.includes(qc));
+  const all = S.fo.ton.filter(hit).sort((a, b)=>(own(b) - own(a)) || ((a.av==='0') - (b.av==='0')) || (a.p || 99) - (b.p || 99)), list = all.slice(0, 30);
+  res.innerHTML = list.length ? (all.length > list.length ? `<div class="sub">Näitan ${list.length} / ${all.length}, täpsusta otsingut.</div>` : '') + list.map(t=>`<div class="ri"><div class="x"><div>${esc(t.n)}</div>${t.d ? `<div class="sub">${esc(t.d.replace(/^Toner for /, ''))}</div>` : ''}<div class="sub">${esc(t.b)} · ${esc(t.id)}${t.p ? ' · <b>' + fmtE(t.p) + ' €</b>' : ''} · ${t.av==='0' ? '<span class="warnt">otsas' + (t.nx ? ', tuleb ' + esc(t.nx) : '') + '</span>' : 'tarnijal ' + esc(t.av)}</div></div>${foAddBtn(t.id)}</div>`).join('') : '<div class="sub">Ühtegi toonerit ei leitud.</div>';
+}
+document.addEventListener('click', e=>{ const b = e.target.closest('#foDR button[data-fadd], #foTR button[data-fadd]'); if (b) { foAdd(b.dataset.fadd, 1); toast('Lisatud tellimusele'); } });
+function renderFoRules(){ const r = foRules(); if (document.activeElement!==$('foLow')) $('foLow').value = r.low; if (document.activeElement!==$('foCover')) $('foCover').value = r.cover;
+  $('foRulesNote').textContent = `Kuukulu arvutatakse sinu Smartprinti ostudest${S.fo.hist_to ? ' kuni ' + dEE(S.fo.hist_to) : ''} (12 kuu ja viimase 3 kuu keskmine). Tooteid, mida ostsid aastas alla 3 korra, hoitakse 1 tk. Tootekaardil saad igale tootele oma min ja sihtkoguse panna.`; }
+function foRulesSave(){ const low = parseInt($('foLow').value), cover = parseInt($('foCover').value);
+  if (!(low >= 0) || !(cover > 0)) return toast('Sisesta päevad numbritena', true);
+  foSeade('reeglid', {low, cover: Math.max(cover, low + 1)}); toast('Reeglid salvestatud'); }
+
+/* avatud tellimus */
+function renderFoCart(){
+  const el = $('foCart'); if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#foCart') && document.activeElement.tagName==='INPUT') return;
+  const lines = foLines(foDraft()), t = foTot(lines), outs = lines.filter(({p})=>foIsOut(p.sku));
+  if (!lines.length) { S.fo.conf = false; el.innerHTML = `<div class="empty" style="margin-top:60px">Avatud tellimus on tühi.<br><br><button onclick="filSetView('ord')">Ava Tellimine</button></div>`; return; }
+  const eta = new Date(); eta.setDate(eta.getDate() + 7);
+  el.innerHTML = `<div class="filtools"><h3 style="margin:0;flex:1">Avatud tellimus: Smartprint24</h3><button class="small" onclick="foGrpAll('cart',1)">Ava kõik grupid</button><button class="small" onclick="foGrpAll('cart',0)">Sulge kõik</button></div>
+    <table class="fil-t"><thead><tr><th class="im"></th><th>Toode</th><th class="num">Laos</th><th>Tarnijal</th><th class="num">Hind</th><th class="num">Kogus</th><th class="num">Summa</th><th></th></tr></thead><tbody>`
+    + foGrouped('cart', lines, a=>a.p, ({p, q})=>{ const o = foO(p.sku);
+      return `<tr data-id="${esc(p.sku)}" style="cursor:default"${foIsOut(p.sku) ? ' class="outrow"' : ''}><td class="im">${p.toner ? '' : filImg(p)}</td><td><div>${esc(p.nimi)}</div><div class="sub">${esc(p.sku)}${p.toner ? ' · tooner' : ''}</div></td>
+        <td class="num sub">${p.toner ? '–' : foOn(p.sku)}</td><td class="sub">${o.av==='0' ? `<span class="warnt">otsas${o.nx ? ', tuleb ' + esc(o.nx) : ''}</span>` : esc(o.av || '')}</td>
+        <td class="num">${o.p ? fmtE(o.p) : '–'}${foPerKg(p, o.p)}</td>
+        <td class="num"><span class="fdq"><button data-c="-1">−</button><input value="${q}" data-cq><button data-c="1"${foIsOut(p.sku) ? ' disabled' : ''}>+</button></span></td>
+        <td class="num"><b>${o.p ? fmtE(o.p * q) : '–'}</b></td><td><button class="ghost" data-rm title="Eemalda">✕</button></td></tr>`; },
+      8, arr=>{ const t = foTot(arr); return `${arr.length} toodet · ${t.tk} tk · ${fmtE(t.eur)} €`; }, true) + `</tbody></table>
+    <div class="filsumbar"><span>Tooteid <b>${lines.length}</b></span><span>Kokku <b>${t.tk}</b> tk</span><span>Summa <b>${fmtE(t.eur)} €</b> km-ta, ilma transpordita</span><span>~<b>${Math.round(t.kg)}</b> kg, ${Math.max(1, Math.ceil(t.kg/26))} pakk${Math.ceil(t.kg/26) > 1 ? 'i' : ''}</span></div>
+    ${outs.length ? `<div class="filconf warn"><b>${outs.length} toodet on tarnijal otsas</b><div class="sub" style="margin:4px 0 8px">Neid ei saa tellida: ${outs.map(({p})=>esc(p.nimi)).join(', ')}. Eemalda need enne kinnitamist.</div><button onclick="foRmOut()">Eemalda otsas tooted</button></div>` : ''}
+    ${S.fo.conf && !outs.length ? `<div class="filconf"><b>Kinnitad tellimuse: ${t.tk} tk, ${fmtE(t.eur)} €?</b><div class="sub" style="margin:4px 0 8px">Tellimus märgitakse teele, eeldatav saabumine ${eta.toLocaleDateString('et-EE')} (saad hiljem „Teel“ all muuta). Need kogused arvestatakse järgmistes soovitustes. Smartprinti portaalis tellimust see ei esita.</div>
+      <button class="green" onclick="foConfirm()">Jah, kinnita</button> <button onclick="S.fo.conf=false;renderFoCart()">Tühista</button></div>`
+    : `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="green" onclick="S.fo.conf=true;renderFoCart()"${outs.length ? ' disabled' : ''}>Kinnita tellimus</button><button onclick="filSetView('ord')">+ Lisa tooteid</button><button onclick="foCopy()">Kopeeri nimekiri</button><button onclick="foCsv()">CSV</button>${lines.some(({p})=>!p.toner) ? '<button data-sure onclick="foDelKind(this,false)">Kustuta filamendid tellimusest</button>' : ''}${lines.some(({p})=>p.toner) ? '<button data-sure onclick="foDelKind(this,true)">Kustuta toonerid tellimusest</button>' : ''}<button class="ghost" onclick="foClear(this)">Tühjenda</button></div>`}
+    <div class="sub" style="margin-top:10px">Smartprinti ostukorvi saab Claude sinu eest täita: kirjuta projektis „pane tellimus korvi“. Portaalis vormistad tellimuse ise, siis vajuta siin „Kinnita tellimus“.</div>`;
+}
+document.addEventListener('click', e=>{ if (!e.target.closest('#foCart')) return;
+  const st = e.target.closest('button[data-c]'); if (st) { foAdd(st.closest('tr').dataset.id, +st.dataset.c); return; }
+  const rm = e.target.closest('button[data-rm]'); if (rm) { const l = Object.assign({}, foDraft()); delete l[rm.closest('tr').dataset.id]; foSetDraft(l); } });
+document.addEventListener('change', e=>{ if (!e.target.matches('#foCart input[data-cq]')) return; const id = e.target.closest('tr').dataset.id, n = Math.max(0, parseInt(e.target.value) || 0);
+  const l = Object.assign({}, foDraft()); if (n) l[id] = n; else delete l[id]; e.target.blur(); foSetDraft(l); });
+function foRmOut(){ const l = Object.assign({}, foDraft()); Object.keys(l).forEach(k=>{ if (foIsOut(k)) delete l[k]; }); foSetDraft(l); toast('Otsas tooted eemaldatud'); }
+function foDelKind(b, toner){ if (!b.dataset.ok) { b.dataset.ok = 1; b.textContent = 'Kindel? Vajuta uuesti'; return; }
+  const l = Object.assign({}, foDraft()); let n = 0; Object.keys(l).forEach(k=>{ const p = foProd(k); if (!!(p && p.toner)===toner) { delete l[k]; n++; } });
+  foSetDraft(l); toast(`Tellimusest kustutatud ${n} ${toner ? 'toonerit' : 'filamenti'}`); }
+function foClear(b){ if (!b.dataset.ok) { b.dataset.ok = 1; b.textContent = 'Kindel? Vajuta uuesti'; return; } foSetDraft({}); }
+async function foConfirm(){ const lines = foLines(foDraft()); if (lines.some(({p})=>foIsOut(p.sku))) return renderFoCart();
+  await guard(async()=>{ const j = await api('/api/filament/kinnita', {json:{vaartus: foTot(lines).eur}}); S.fo.conf = false; toast(`Tellimus ${j.nimi} kinnitatud ja märgitud teele`); await loadFo(false, true); filSetView('teel'); }); }
+function foCopy(){ const txt = foLines(foDraft()).map(({p, q})=>`${p.sku}\t${q}\t${p.nimi}`).join('\n');
+  (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(()=>toast('Nimekiri kopeeritud'), ()=>toast('Kopeerimine ei õnnestunud', true)); }
+function foCsv(){ const q = v => /[",;\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v);
+  const rows = [['sku','ean','qty','nimetus','hind_eur'], ...foLines(foDraft()).map(({p, q: n})=>[p.sku, p.ean || '', n, p.nimi, foO(p.sku).p || ''])];
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + rows.map(r=>r.map(q).join(',')).join('\n')], {type:'text/csv'}));
+  a.download = `tellimus-Smartprint24-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); }
+
+/* teel */
+async function renderFoTeel(){
+  const el = $('foTeel'); if (document.activeElement && document.activeElement.closest && document.activeElement.closest('#foTeel') && document.activeElement.tagName==='INPUT') return;
+  const open = S.fo.tell.filter(o=>o.staatus==='ordered'), done = S.fo.tell.filter(o=>o.staatus==='received').slice(0, 6);
+  const card = o => { const n = Object.keys(o.read || {}).length;
+    return `<div class="filord"><div class="x"><b>${o.arve ? 'Arve ' + esc(o.arve) : 'Tellimus ' + esc(o.nimi)}</b> <span class="sub">${esc(dEE(o.loodud))}</span><div class="sub">${n} toodet · ${o.kogus || 0} tk${o.vaartus ? ' · ' + fmtE(o.vaartus) + ' €' : ''}</div></div>`
+      + (o.staatus==='ordered' ? `<span class="sub">saabub ~</span><input type="date" value="${esc(o.eta || '')}" data-eta="${esc(o.guid)}"><button class="green" onclick="foRecv('${esc(o.guid)}')">Kaup saabus</button><button class="ghost" onclick="foCancel(this,'${esc(o.guid)}')">Tühista</button>`
+        : `<span class="sub">saabus ${esc(dEE(o.saabus))}, lattu ${o.saabus_kogus || 0} tk</span>`) + `</div>`; };
+  el.innerHTML = `<h3 style="margin:0 0 10px">Teel</h3>${open.length ? open.map(card).join('') : '<div class="sub" style="margin-bottom:12px">Teel olevaid tellimusi pole.</div>'}
+    <div class="filtools" style="margin-top:14px"><b style="flex:1">Tarnija arved <span class="sub" style="font-weight:400">(3 viimast, Smartprinti portaalist)</span></b><button onclick="foArved(this)">Näita arveid</button></div><div id="foArved">${S.fo.arvedHtml || ''}</div>
+    ${done.length ? `<h3 style="margin:18px 0 10px">Viimati saabunud</h3>${done.map(card).join('')}` : ''}`;
+}
+document.addEventListener('change', async e=>{ const g = e.target.dataset && e.target.dataset.eta; if (!g || !e.target.closest('#foTeel')) return;
+  await guard(async()=>{ await api('/api/filament/tellimus/eta', {json:{guid:g, eta:e.target.value}}); const o = S.fo.tell.find(x=>x.guid===g); if (o) o.eta = e.target.value; toast('Saabumise aeg salvestatud'); }); });
+/* v99: arved otse Smartprinti portaalist; olek uus / teel / laos; uue saab märkida teele (läheb laoseisus „Teel“ alla) */
+async function foArved(btn){ if (btn) { btn.disabled = true; btn.textContent = 'Kontrollin…'; }
+  $('foArved').innerHTML = '<div class="sub">Kontrollin Smartprinti portaalist arveid…</div>';
+  try { const j = await api('/api/filament/tarnija_arved'); S.fo.arved = j; foArvedRender(); }
+  catch(e){ $('foArved').innerHTML = `<div class="sub" style="color:var(--accent)">${esc(e.message)}</div>`; S.fo.arvedHtml = ''; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Näita arveid'; } }
+function foArvedRender(){ const j = S.fo.arved; if (!j) return;
+  const lbl = {uus:'Uus', teel:'Teel', laos:'Laos'};
+  const html = (j.arved.length ? j.arved.map(a=>`<div class="filord"><div class="x"><b>${esc(a.nimi)}</b> <span class="foarv ${a.olek}">${lbl[a.olek]}</span> <span class="sub">${esc(dEE(a.kuupaev))}</span>
+      <div class="sub">${Object.keys(a.read).length} toodet · ${a.kogus} tk · ${fmtE(a.vaartus)} €${a.muud.length ? ' · lisaks: ' + esc(a.muud.join(', ')) : ''}</div></div>`
+    + (a.olek==='uus' ? (j.vabad.length ? `<select data-asenda="${esc(a.id)}" title="Kui see arve on juba kinnitatud tellimuse kohta, vali see – siis teel olevat ei tule topelt"><option value="">uus teel olev</option>${j.vabad.map(o=>`<option value="${esc(o.guid)}">asendab tellimuse ${esc(o.nimi)} (${o.kogus} tk)</option>`).join('')}</select>` : '')
+        + `<button class="green" onclick="foArveTeele(this,'${esc(a.id)}')">Märgi teel</button>` : '') + `</div>`).join('')
+    : '<div class="sub">Portaalis arveid ei leitud.</div>') + `<div class="sub" style="margin-top:4px">Kontrollitud ${esc((j.aeg||'').slice(11,16))}</div>`;
+  S.fo.arvedHtml = html; if ($('foArved')) $('foArved').innerHTML = html; }
+async function foArveTeele(b, id){ const sel = document.querySelector(`#foArved select[data-asenda="${CSS.escape(id)}"]`);
+  b.disabled = true; await guard(async()=>{ const j = await api('/api/filament/tarnija_arve_teele', {json:{id, asenda: sel ? sel.value : ''}});
+    toast(`Arve ${j.arve}: ${j.kogus} tk märgitud teele`); const a = S.fo.arved.arved.find(x=>x.id===id); if (a) a.olek = 'teel'; S.fo.arvedHtml = '';
+    if (sel && sel.value) S.fo.arved.vabad = S.fo.arved.vabad.filter(o=>o.guid!==sel.value);
+    await loadFo(false, true); foArvedRender(); }); b.disabled = false; }
+async function foCancel(b, g){ if (!b.dataset.ok) { b.dataset.ok = 1; b.textContent = 'Kindel? Tühista'; return; }
+  await guard(async()=>{ await api('/api/filament/tellimus/tyhista', {json:{guid:g}}); toast('Tellimus tühistatud'); await loadFo(false, true); }); }
+function foRecv(g){
+  const o = S.fo.tell.find(x=>x.guid===g); if (!o) return; const lines = foLines(o.read || {});
+  $('mbox').innerHTML = `<h3>Kaup saabus: ${o.arve ? 'arve ' + esc(o.arve) : 'tellimus ' + esc(o.nimi)}</h3><div class="sub">Kontrolli kogused üle (pane 0, kui midagi ei tulnud) ja lisa lattu kandena „Sisse“. Ära skänni sama saadetist uuesti „Sisse“, muidu läheb topelt. Toonereid laos ei peeta.</div>
+    <table class="fil-t" style="margin-top:10px"><tbody>${lines.map(({p, q})=>`<tr data-id="${esc(p.sku)}" style="cursor:default"><td class="im">${p.toner ? '' : filImg(p)}</td><td>${esc(p.nimi)}<div class="sub">tellitud ${q}${p.toner ? ' · tooner' : ''}</div></td><td class="num"><input value="${p.toner ? 0 : q}" data-r style="width:60px;text-align:center"${p.toner ? ' disabled' : ''}></td></tr>`).join('')}</tbody></table>
+    <div class="mbar"><button onclick="closeModal()">Katkesta</button><button class="green" id="foRGo">Lisa lattu</button></div>`;
+  $('modal').classList.add('open');
+  $('foRGo').onclick = async()=>{ const read = {}; $('mbox').querySelectorAll('tr[data-id]').forEach(tr=>{ const n = parseInt(tr.querySelector('input').value) || 0; if (n > 0) read[tr.dataset.id] = n; });
+    $('foRGo').disabled = true; await guard(async()=>{ const j = await api('/api/filament/saabus', {json:{guid:g, read}}); closeModal(); toast(`Kaup lisatud lattu: ${j.kokku} tk`); await loadFil(false, true); await loadFo(false, true); }); if ($('foRGo')) $('foRGo').disabled = false; };
+}
+
+/* tootekaardile: min/siht ja eelistus */
+function foCardExtra(sku){
+  if (!S.fo.loaded || !foSup(foP(sku))) return '';
+  const pl = foPlan(sku), mm = foMM(sku) || {}, pm = foGMonth(sku), twin = pl.g.length > 1;
+  return `<div class="filcard" style="margin-top:12px"><div class="t">Tellimine</div>
+    <div style="display:flex;gap:6px;align-items:center;margin-top:6px">min <input id="foMmMin" style="width:60px" value="${mm.min ?? ''}" placeholder="${pl.auto.min}"> siht <input id="foMmT" style="width:60px" value="${mm.target ?? ''}" placeholder="${pl.auto.target}"><button onclick="foMmSave('${esc(sku)}')">OK</button></div>
+    <div class="sub" style="margin-top:4px">${pm ? `Ostad ~${pm < 1 ? pm.toFixed(1) : Math.round(pm)} tk kuus${foPla(sku).length ? ' (koos sama värvi tavalise PLA-ga)' : ''}. ` : 'Ostuajalugu puudub. '}${twin ? `Kehtib paarile Prof Lab + Smart Print (laos kokku ${pl.stock}). ` : ''}Tühi = automaatne (${pl.auto.min}/${pl.auto.target}). Siht 0 = ära telli. Teel ${pl.inc}.</div>
+    ${twin ? `<label class="chk" style="margin-top:6px"><input type="checkbox" id="foPrefSp"${foPref(sku) ? ' checked' : ''} onchange="foSeade('pref:${esc(foGKey(sku))}', this.checked ? {smart:true} : null)"> Eelista selle paari tellimisel Smart Printi (vaikimisi Prof Lab)</label>` : ''}</div>`;
+}
+async function foMmSave(sku){
+  const a = $('foMmMin').value.trim(), b = $('foMmT').value.trim(), gk = foGKey(sku);
+  for (const x of foGroup(sku)) if (x.sku!==gk && S.fo.seaded['mm:' + x.sku]) await foSeade('mm:' + x.sku, null);
+  if (!a && !b) { await foSeade('mm:' + gk, null); return toast('Tellimine: automaatne'); }
+  const auto = foAuto(sku); let min = a==='' ? auto.min : parseInt(a), target = b==='' ? Math.max(auto.target, min + 1) : parseInt(b);
+  if (isNaN(min) || isNaN(target) || min < 0 || target < 0) return toast('Sisesta min ja siht numbritena', true);
+  if (target && target <= min) target = min + 1;
+  await foSeade('mm:' + gk, {min, target}); $('foMmMin').value = min; $('foMmT').value = target; toast(target ? `Min ${min}, siht ${target}` : 'Seda toodet ei tellita');
+}
+
+
+document.addEventListener('keydown', e=>{ if (e.key==='Escape'){ closeModal(); } });
+function setMode(){}
+api('/api/tervis').then(j=>{ $('foot').textContent = 'Versioon ' + (j.versioon||''); }).catch(()=>{});
+loadFil(); setTimeout(()=>loadFo(false, true), 1500);
+</script>
+</body>
+</html>
