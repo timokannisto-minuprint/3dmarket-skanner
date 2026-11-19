@@ -612,11 +612,18 @@ def _sp_konto():
                     k[v] = cp.get(sek, v)
     except Exception:
         pass
+    try:   # ladu.3dmarket.ee: Timo sisestab need veebis (⚙ Seaded), hoitakse andmekaustas failis tarnija.json
+        with open(os.path.join(kaust(), "tarnija.json"), encoding="utf-8") as fh:
+            tj = json.load(fh)
+        for v in ("smartprint_kasutaja", "smartprint_parool"):
+            if (tj.get(v) or "").strip() and not (k.get(v) or "").strip():
+                k[v] = tj[v]
+    except (OSError, ValueError):
+        pass
     u = (k.get("smartprint_kasutaja") or os.environ.get("SMARTPRINT_USER") or "").strip()
     p = (k.get("smartprint_parool") or os.environ.get("SMARTPRINT_PASS") or "").strip()
     if not u or not p:
-        raise RuntimeError("Smartprinti kasutaja puudub. Lisa faili postikeskkond.ini jaotisse [keskkond] read "
-                           "smartprint_kasutaja = … ja smartprint_parool = … ning käivita programm uuesti.")
+        raise RuntimeError("Smartprinti kasutaja puudub. Sisesta see laohalduse lehel ⚙ Seaded → Tarnija ühendus.")
     return u, p
 
 
@@ -627,9 +634,8 @@ def _sp_hind(s):
         return 0.0
 
 
-def _sp_tooma(n=3):
-    """Logib Smartprinti B2B portaali ja toob n viimast FS arvet koos ridadega."""
-    import re, html as _h
+def sp_sessioon():
+    """Sisse logitud requests.Session Smartprinti B2B portaali."""
     import requests
     u, p = _sp_konto()
     s = requests.Session()
@@ -637,7 +643,15 @@ def _sp_tooma(n=3):
     s.get(SP_B2B + "/Profil/LogOn", timeout=30)
     r = s.post(SP_B2B + "/Profil/LogOn", data={"UserName": u, "Password": p, "ReturnUrl": "/"}, timeout=30)
     if "logout" not in r.text.lower():
-        raise RuntimeError("Smartprinti portaali sisselogimine ebaõnnestus (kontrolli kasutajat ja parooli ini-failis).")
+        raise RuntimeError("Smartprinti portaali sisselogimine ebaõnnestus. Kontrolli kasutajat ja parooli (⚙ Seaded).")
+    return s
+
+
+def _sp_tooma(n=3):
+    """Logib Smartprinti B2B portaali ja toob n viimast FS arvet koos ridadega."""
+    import re, html as _h
+    import requests
+    s = sp_sessioon()
     h = s.get(SP_B2B + "/p/StockDocument?symbol=ZK&page=1", timeout=60).text
     docs = []
     for did, nm in re.findall(r'href="/p/StockDocument/Index\?id=(\d+)" class="dropdown-item"[^>]*>(FS [^<]+)<', h):

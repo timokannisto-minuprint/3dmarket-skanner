@@ -65,6 +65,7 @@ def tee(src):
       <button data-v="teel" onclick="filSetView('teel')"><span class="ic">🚚</span>Teel</button>
       <div class="navh">Tööriistad</div>
       <a href="/api/ladu/laoseis.csv"><span class="ic">⬇</span>Laoseis CSV</a>
+      <a href="/seaded"><span class="ic">⚙</span>Seaded</a>
       <a href="/logout"><span class="ic">↩</span>Logi välja</a>
     </nav>
     <div class="foot" id="foot"></div>

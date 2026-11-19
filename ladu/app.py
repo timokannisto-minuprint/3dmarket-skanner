@@ -22,7 +22,7 @@ Keskkonnamuutujad (PM2 ecosystem.config.js):
 """
 import datetime as dt, hashlib, json, os, secrets, sqlite3, sys, threading, time, traceback
 
-from flask import Flask, jsonify, request, send_from_directory, abort, session, redirect
+from flask import Flask, jsonify, request, send_from_directory, abort, session, redirect, Response
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -120,6 +120,8 @@ def _luba():
         return
     if session.get("sees"):   # veebis sisse loginud (laohalduse leht)
         return
+    if p == "/seaded":
+        return redirect("/login")
     if p in TELEFONI_TEED:
         if _vordle(request.headers.get("X-Voti", ""), TEL_VOTI) or _vordle(request.headers.get("X-Ladu-Voti", ""), LADU_VOTI):
             return
@@ -166,6 +168,55 @@ button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--acce
 
 def _ip():
     return (request.headers.get("X-Forwarded-For") or request.remote_addr or "").split(",")[0].strip()
+
+
+SEADED_HTML = LOGIN_HTML.split("</style>")[0] + """
+form{max-width:420px}label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}.ok{color:var(--accent);font-size:14px;margin:0 0 12px}
+a{color:var(--accent)}.n{font-size:13px;opacity:.7;margin:14px 0 0}</style></head><body>
+<form method="post" action="/seaded" autocomplete="off"><h1>⚙ Seaded</h1><p>Tarnija ühendus (Smartprint24 B2B). Seda kasutavad Teel-vaate arved ja tarnija kontroll, ka Postikeskkonna kaudu.</p>%TEADE%
+<label for="k">Smartprinti kasutaja</label><input id="k" name="kasutaja" value="%KASUTAJA%" autocomplete="off" required>
+<label for="p">Smartprinti parool</label><input id="p" type="password" name="parool" placeholder="%PH%" autocomplete="new-password">
+<button>Salvesta ja proovi ühendust</button>
+<p class="n">Parool hoitakse ainult laoserveris (ei lähe brauserisse tagasi). Tühjaks jäetud parooliväli jätab vana parooli alles.<br><a href="/">← Tagasi lattu</a></p></form></body></html>"""
+
+
+def _tarnija_fail():
+    return os.path.join(ANDMED, "tarnija.json")
+
+
+def _tarnija():
+    try:
+        with open(_tarnija_fail(), encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        return {}
+
+
+@app.route("/seaded", methods=["GET", "POST"])
+def seaded():
+    import html as _h
+    t, teade = _tarnija(), ""
+    if request.method == "POST":
+        k = request.form.get("kasutaja", "").strip()
+        p = request.form.get("parool", "")
+        t["smartprint_kasutaja"] = k
+        if p.strip():
+            t["smartprint_parool"] = p.strip()
+        f = _tarnija_fail()
+        with open(f + ".tmp", "w", encoding="utf-8") as fh:
+            json.dump(t, fh, ensure_ascii=False)
+        os.chmod(f + ".tmp", 0o600)
+        os.replace(f + ".tmp", f)
+        _logi("tarnija seaded muudetud (veeb)")
+        try:
+            filament.sp_sessioon()
+            teade = '<div class="ok">✓ Salvestatud. Ühendus Smartprintiga töötab.</div>'
+        except Exception as e:
+            teade = f'<div class="v">Salvestatud, aga ühendus ei õnnestunud: {_h.escape(str(e))}</div>'
+    html = (SEADED_HTML.replace("%TEADE%", teade)
+            .replace("%KASUTAJA%", _h.escape(t.get("smartprint_kasutaja", ""), quote=True))
+            .replace("%PH%", "salvestatud (jäta tühjaks, kui ei muuda)" if t.get("smartprint_parool") else "parool"))
+    return Response(html, content_type="text/html; charset=utf-8")
 
 
 @app.get("/")
