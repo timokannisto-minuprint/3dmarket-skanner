@@ -172,12 +172,13 @@ def _ip():
 
 SEADED_HTML = LOGIN_HTML.split("</style>")[0] + """
 form{max-width:420px}label{display:block;font-size:13px;font-weight:600;margin:0 0 4px}.ok{color:var(--accent);font-size:14px;margin:0 0 12px}
-a{color:var(--accent)}.n{font-size:13px;opacity:.7;margin:14px 0 0}</style></head><body>
+a{color:var(--accent)}.n{font-size:13px;opacity:.7;margin:14px 0 0}body{gap:16px;align-content:center}
+.sec{background:transparent;color:var(--accent);border:1.5px solid var(--accent)}code{font-size:13px}</style></head><body>
 <form method="post" action="/seaded" autocomplete="off"><h1>⚙ Seaded</h1><p>Tarnija ühendus (Smartprint24 B2B). Seda kasutavad Teel-vaate arved ja tarnija kontroll, ka Postikeskkonna kaudu.</p>%TEADE%
 <label for="k">Smartprinti kasutaja</label><input id="k" name="kasutaja" value="%KASUTAJA%" autocomplete="off" required>
 <label for="p">Smartprinti parool</label><input id="p" type="password" name="parool" placeholder="%PH%" autocomplete="new-password">
 <button>Salvesta ja proovi ühendust</button>
-<p class="n">Parool hoitakse ainult laoserveris (ei lähe brauserisse tagasi). Tühjaks jäetud parooliväli jätab vana parooli alles.<br><a href="/">← Tagasi lattu</a></p></form></body></html>"""
+<p class="n">Parool hoitakse ainult laoserveris (ei lähe brauserisse tagasi). Tühjaks jäetud parooliväli jätab vana parooli alles.<br><a href="/">← Tagasi lattu</a></p></form>%UUENDUS%</body></html>"""
 
 
 def _tarnija_fail():
@@ -190,6 +191,58 @@ def _tarnija():
             return json.load(fh)
     except (OSError, ValueError):
         return {}
+
+
+# ---------------------------------------------------------------- tarkvara uuendus veebist (Maci ega SSH-i pole vaja)
+def _git(*a, timeout=60):
+    import shutil, subprocess
+    g = shutil.which("git") or next((x for x in ("/usr/local/bin/git", "/usr/bin/git") if os.path.exists(x)), "git")
+    r = subprocess.run([g, *a], cwd=os.path.dirname(HERE), capture_output=True, text=True, timeout=timeout)
+    if r.returncode:
+        raise RuntimeError((r.stderr or r.stdout).strip()[-400:])
+    return r.stdout.strip()
+
+
+def _uuenduse_vorm(teade=""):
+    import html as _h
+    try:
+        praegu = _git("log", "-1", "--format=%h · %s · %cd", "--date=format:%d.%m.%Y %H:%M")
+    except Exception as e:
+        praegu = f"(git viga: {e})"
+    uued = ""
+    try:
+        _git("fetch", "--quiet", "origin", timeout=90)
+        logi = _git("log", "--format=%h · %s", "HEAD..@{u}")
+        uued = ("<p><b>Saadaval uuendused:</b><br>" + "<br>".join(_h.escape(x) for x in logi.splitlines()[:10]) + "</p>"
+                '<button>Uuenda kohe</button>') if logi else "<p>✓ Uusim versioon on juba peal.</p>"
+    except Exception as e:
+        uued = f'<div class="v">Uuenduste kontroll ebaõnnestus: {_h.escape(str(e))}</div>'
+    return (f'<form method="post" action="/seaded/uuenda"><h1>Tarkvara uuendus</h1>{teade}'
+            f'<p>Praegu: <code>{_h.escape(praegu)}</code></p>{uued}</form>')
+
+
+@app.post("/seaded/uuenda")
+def seaded_uuenda():
+    import html as _h
+    if not session.get("sees"):
+        abort(403)
+    try:
+        enne = _git("rev-parse", "--short", "HEAD")
+        _git("pull", "--ff-only", "--quiet", timeout=120)
+        parast = _git("rev-parse", "--short", "HEAD")
+    except Exception as e:
+        return Response(_uuenduse_leht(f'<div class="v">Uuendus ebaõnnestus: {_h.escape(str(e))}</div>'), content_type="text/html; charset=utf-8")
+    if enne == parast:
+        return redirect("/seaded")
+    _logi(f"tarkvara uuendus veebist {enne} -> {parast}")
+    # programm lõpetab end 2 s pärast; PM2 käivitab selle kohe uue koodiga uuesti
+    threading.Timer(2, lambda: os._exit(0)).start()
+    return Response(_uuenduse_leht(f'<div class="ok">✓ Uuendatud {enne} → {parast}. Programm taaskäivitub, leht laeb end 8 sekundi pärast uuesti.</div>'
+                                   '<script>setTimeout(()=>location.href="/seaded",8000)</script>'), content_type="text/html; charset=utf-8")
+
+
+def _uuenduse_leht(sisu):
+    return LOGIN_HTML.split("</style>")[0] + "</style></head><body><form><h1>Tarkvara uuendus</h1>" + sisu + '<p><a href="/seaded">← Seaded</a></p></form></body></html>'
 
 
 @app.route("/seaded", methods=["GET", "POST"])
@@ -213,7 +266,7 @@ def seaded():
             teade = '<div class="ok">✓ Salvestatud. Ühendus Smartprintiga töötab.</div>'
         except Exception as e:
             teade = f'<div class="v">Salvestatud, aga ühendus ei õnnestunud: {_h.escape(str(e))}</div>'
-    html = (SEADED_HTML.replace("%TEADE%", teade)
+    html = (SEADED_HTML.replace("%TEADE%", teade).replace("%UUENDUS%", _uuenduse_vorm())
             .replace("%KASUTAJA%", _h.escape(t.get("smartprint_kasutaja", ""), quote=True))
             .replace("%PH%", "salvestatud (jäta tühjaks, kui ei muuda)" if t.get("smartprint_parool") else "parool"))
     return Response(html, content_type="text/html; charset=utf-8")
