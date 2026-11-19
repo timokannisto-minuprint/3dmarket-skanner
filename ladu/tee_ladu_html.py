@@ -56,6 +56,7 @@ def tee(src):
 <div class="app fil-mode" id="app">
   <aside class="side">
     <div class="brand"><span class="logo">🧵</span><span>3dmarket ladu<small>ladu.3dmarket.ee</small></span></div>
+    <a class="skbtn" href="/skanner"><span class="ic">📱</span><span>Ava laoskänner<small>kaamera · EAN</small></span></a>
     <nav class="nav">
       <button data-v="yl" onclick="filSetView('yl')"><span class="ic">📊</span>Ülevaade</button>
       <button data-v="laos" onclick="filSetView('laos')"><span class="ic">🧵</span>Laoseis</button>
@@ -63,7 +64,6 @@ def tee(src):
       <button data-v="cart" onclick="filSetView('cart')"><span class="ic">📝</span>Avatud tellimus</button>
       <button data-v="teel" onclick="filSetView('teel')"><span class="ic">🚚</span>Teel</button>
       <div class="navh">Tööriistad</div>
-      <a href="/skanner" target="_blank"><span class="ic">📱</span>Telefoni skänner</a>
       <a href="/api/ladu/laoseis.csv"><span class="ic">⬇</span>Laoseis CSV</a>
       <a href="/logout"><span class="ic">↩</span>Logi välja</a>
     </nav>
@@ -73,6 +73,7 @@ def tee(src):
 </div>
 <div class="modal" id="modal"><div class="mwrap"><button class="mclose" onclick="closeModal()" title="Sulge (Esc)">✕</button><div class="mbox" id="mbox"></div></div></div>
 <div class="toast" id="toast"></div>
+<a class="skfab" href="/skanner"><span>📱</span> Ava laoskänner</a>
 <script>
 // Tehtud skriptiga tee_ladu_html.py Postikeskkonna index.html-ist (Filament-vaade) + web/ylevaade.js. Ära muuda käsitsi.
 {abi}

@@ -90,3 +90,25 @@ table.fil-t .im{width:52px}
 .yl .chips{display:flex;flex-wrap:wrap;gap:6px}
 .yl .chip{font-size:12px;padding:3px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent);cursor:pointer}
 @media (max-width:900px){.app.fil-mode{grid-template-columns:1fr}.side{display:none}.filbody{grid-template-columns:1fr}.filside{display:none}.filscan{width:100%}}
+/* suur laoskänneri nupp: külgribal ja mobiilis ekraani all */
+.skbtn{display:flex;align-items:center;gap:12px;margin:0 2px 14px;padding:13px 14px;border-radius:14px;background:linear-gradient(135deg,#2fb39f,#0f766e);color:#fff;text-decoration:none;font-weight:700;font-size:15px;box-shadow:0 6px 18px rgba(15,118,110,.35)}
+.skbtn .ic{font-size:22px}
+.skbtn small{display:block;font-weight:500;font-size:11.5px;opacity:.8}
+.skbtn:hover{filter:brightness(1.06)}
+.skfab{display:none}
+@media (max-width:900px){
+  .skfab{display:flex;align-items:center;justify-content:center;gap:10px;position:fixed;z-index:1000;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));padding:18px;border-radius:16px;background:linear-gradient(135deg,#2fb39f,#0f766e);color:#fff;text-decoration:none;font-weight:700;font-size:18px;box-shadow:0 10px 28px rgba(15,118,110,.45)}
+  .skfab span{font-size:24px}
+  .fil{padding-bottom:96px}
+}
+/* mobiil: leht ei tohi minna ekraanist laiemaks */
+@media (max-width:900px){
+  .app.fil-mode{min-width:0;max-width:100vw}
+  .app.fil-mode>.fil{min-width:0;max-width:100vw;overflow-x:hidden}
+  .fil .filviews{overflow-x:auto;flex-wrap:nowrap;max-width:100%;scrollbar-width:none}
+  .fil .filviews button{white-space:nowrap;flex:0 0 auto}
+  .fil .filhead,.fil .filtop{flex-wrap:wrap;min-width:0}
+  .yl .kpis{grid-template-columns:1fr 1fr}
+  .yl .grid{grid-template-columns:1fr}
+  .filv.yl{padding:14px}
+}

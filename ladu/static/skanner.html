@@ -12,7 +12,10 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:15px/1.4 var(--sans);-webkit-tap-highlight-color:transparent}
 .app{display:flex;flex-direction:column;height:100%;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
-.top{display:flex;gap:6px;padding:10px 12px}
+.top{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px}
+.top button.main{flex:1 1 100%;font-size:17px;padding:14px 4px}
+.top button:not(.main){font-size:12.5px;padding:6px 4px;opacity:.85}
+.top button:not(.main)[aria-pressed="true"]{opacity:1}
 .top button{flex:1;border:1.5px solid var(--line);background:none;color:var(--fg);font:600 14px var(--sans);padding:9px 4px;border-radius:10px}
 .top button[aria-pressed="true"]{border-color:var(--accent);background:#16342e;color:var(--accent)}
 .cam{position:relative;flex:1;min-height:0;margin:0 12px;border-radius:16px;overflow:hidden;background:#000}
@@ -50,9 +53,9 @@ textarea{width:100%;height:80px;background:#000;color:var(--muted);border:1px so
 <body>
 <div class="app">
   <div class="top" id="modes">
-    <button data-m="inventory" aria-pressed="true">Inventuur</button>
-    <button data-m="receipt" aria-pressed="false">Sisse</button>
-    <button data-m="sale" aria-pressed="false">Välja</button>
+    <button data-m="sale" class="main" aria-pressed="true">Müük · võtab laost maha</button>
+    <button data-m="inventory" aria-pressed="false">Inventuur</button>
+    <button data-m="receipt" aria-pressed="false">Lisa lattu</button>
   </div>
   <div class="net" id="net"><i></i><span>Ühendan laoga…</span></div>
   <div class="cam">
@@ -78,13 +81,14 @@ textarea{width:100%;height:80px;background:#000;color:var(--muted);border:1px so
 <script>
 // ladu.3dmarket.ee: skänner käib otse laoserverisse (sama andmebaas mida Postikeskkond näitab). Iga skänn saadetakse kohe;
 // ühenduseta jäävad skännid järjekorda (localStorage) ja saadetakse automaatselt, kui arvuti on jälle kättesaadav.
-const TYPES = {inventory:'Inventuur', receipt:'Sisse', sale:'Välja'};
+const TYPES = {inventory:'Inventuur', receipt:'Lisa lattu', sale:'Müük'};
 const $ = id => document.getElementById(id);
 const LS = {get(k, d){ try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch(e){ return d; } },
             set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }};
 (function(){ const m = location.hash.match(/k=([\w-]+)/); if (m) LS.set('voti', m[1]); })();
 const VOTI = LS.get('voti', '');
-let mode = LS.get('mode', 'inventory'), names = LS.get('nimed', {}), scans = LS.get('voor', []), queue = LS.get('jarjekord', []);
+let mode = 'sale',   // avades alati müük (Timo 19.11): inventuur ja lisa lattu on eraldi väiksemad nupud
+    names = LS.get('nimed', {}), scans = LS.get('voor', []), queue = LS.get('jarjekord', []);
 let online = null, sending = false;
 
 function save(){ LS.set('voor', scans); LS.set('jarjekord', queue); LS.set('mode', mode); }
