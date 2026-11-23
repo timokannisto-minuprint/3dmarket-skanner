@@ -65,3 +65,36 @@ async function loadYl(){
       </div>`;
   });
 }
+
+/* ---------- Avatud tellimus -> Smartprinti ostukorv (ladu.3dmarket.ee) */
+const _renderFoCart0 = renderFoCart;
+renderFoCart = function(){
+  _renderFoCart0();
+  const el = [...document.querySelectorAll('#filV-cart .sub')].find(x => /pane tellimus korvi/.test(x.textContent));
+  if (!el) return;
+  el.innerHTML = `<div class="spkorv"><button class="green" onclick="foSpKorvi(this)">🛒 Saada Smartprinti ostukorvi</button>
+    <span>Ladu paneb read koos kogustega portaali ostukorvi. Seal vaatad üle ja vajutad <b>Order</b>. Siis vajuta siin „Kinnita tellimus“, et kaup läheks teele.</span></div>`;
+};
+async function foSpKorvi(b, ikka){
+  b.disabled = true; const t0 = b.textContent; b.textContent = 'Saadan portaali…';
+  try {
+    const j = await api('/api/filament/sp_korvi', {json:{ikka: !!ikka}});
+    if (j.korv_tais) {
+      $('mbox').innerHTML = `<h2>Smartprinti korvis on juba ${j.korv_tais} rida</h2>
+        <p>Kui lisan read juurde, võivad mõned kogused minna topelt. Soovitan korvi portaalis enne üle vaadata või tühjendada.</p>
+        <p style="display:flex;gap:8px;flex-wrap:wrap"><a class="btnlink" href="${esc(j.link)}" target="_blank" rel="noopener">Ava ostukorv →</a>
+        <button onclick="closeModal();foSpKorvi(this,true)">Lisa ikkagi juurde</button></p>`;
+      $('modal').classList.add('open'); b.disabled = false; b.textContent = t0; return;
+    }
+    const lisa = [];
+    if (j.korv_enne) lisa.push(`Korvis oli juba enne ${j.korv_enne} rida, lisasin need juurde.`);
+    if (j.puudu.length) lisa.push(`Portaali koodi pole, lisa käsitsi: ${j.puudu.map(ylNimi).join(', ')}`);
+    if (j.vead.length) lisa.push(`Vead: ${j.vead.join('; ')}`);
+    $('mbox').innerHTML = `<h2>Ostukorv täidetud</h2><p>Portaali korvi läks <b>${j.lisatud}</b> rida (${j.rulle} tk).</p>
+      ${lisa.map(x => `<p class="hint">${esc(x)}</p>`).join('')}
+      <p><a class="green btnlink" href="${esc(j.link)}" target="_blank" rel="noopener">Ava Smartprinti ostukorv →</a></p>
+      <p class="hint">Kui oled portaalis tellimuse esitanud, vajuta siin „Kinnita tellimus“.</p>`;
+    $('modal').classList.add('open');
+  } catch(e){ toast(e.message, true); }
+  b.disabled = false; b.textContent = t0;
+}

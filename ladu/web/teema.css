@@ -112,3 +112,5 @@ table.fil-t .im{width:52px}
   .yl .grid{grid-template-columns:1fr}
   .filv.yl{padding:14px}
 }
+.spkorv{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:6px}.spkorv span{flex:1;min-width:220px}
+.btnlink{display:inline-block;padding:10px 16px;border-radius:10px;background:var(--ok);color:#fff;text-decoration:none;font-weight:600}

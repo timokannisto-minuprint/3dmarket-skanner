@@ -116,7 +116,8 @@ def kataloog():
                      "tootja": (r.get("tootja") or "").strip(), "sari": (r.get("tootesari") or "").strip(),
                      "mat": (r.get("materjal") or "").strip(), "varv": (r.get("varv") or "").strip(),
                      "g": _num(r.get("netokaal_g")), "hind": _num(r.get("ostuhind_eur")), "d": (r.get("labimoot_mm") or "").strip(),
-                     "saadav": (r.get("tarnija_saadavus") or "").strip(), "pilt": pilt}
+                     "saadav": (r.get("tarnija_saadavus") or "").strip(), "pilt": pilt,
+                     "tid": (r.get("tarnija_id") or "").strip()}
                 tooted.append(t)
                 by_sku[sku] = t
                 if t["ean"]:
@@ -483,6 +484,42 @@ def filament_kinnita():
     return _ok(nimi=nimi)
 
 
+@bp.post("/api/filament/sp_korvi")
+def filament_sp_korvi():
+    """Avatud tellimus -> Smartprinti B2B portaali ostukorv (tellimust ei esita; Timo vajutab portaalis Order ise)."""
+    import re
+    with _db() as c:
+        r = c.execute("SELECT * FROM filament_tellimus WHERE guid='draft-sp'").fetchone()
+        read = _tellimus(r)["read"] if r else {}
+    if not read:
+        raise RuntimeError("Avatud tellimus on tühi.")
+    kat = kataloog()["by_sku"]
+    ton = {}
+    try:
+        with open(os.path.join(kaust(), "skanner", "toonerid.json"), encoding="utf-8") as fh:
+            ton = {t.get("id"): t for t in (json.load(fh).get("items") or [])}
+    except (OSError, ValueError):
+        pass
+    s = sp_sessioon()
+    enne = s.get(SP_B2B + "/Cart", timeout=60).text
+    korv_enne = max(0, len(re.findall(r"removeFromCart\(\s*\d", enne)))
+    if korv_enne and not (request.get_json(silent=True) or {}).get("ikka"):
+        return _ok(korv_tais=korv_enne, lisatud=0, link=SP_B2B + "/cart")   # korvis on juba midagi – küsi enne üle
+    lisatud, puudu, vead = [], [], []
+    for sku, q in read.items():
+        tid = (kat.get(sku) or {}).get("tid") or (ton.get(sku) or {}).get("pid") or ""
+        if not tid:
+            puudu.append(sku)
+            continue
+        try:
+            x = s.post(SP_B2B + "/Cart/AddJ", data={"id": tid, "q": int(q), "parameter": ""}, timeout=60)
+            (lisatud if x.ok else vead).append(sku if x.ok else f"{sku}: HTTP {x.status_code}")
+        except Exception as e:
+            vead.append(f"{sku}: {e}")
+    return _ok(lisatud=len(lisatud), rulle=sum(int(read[k]) for k in lisatud), puudu=puudu, vead=vead,
+               korv_enne=korv_enne, link=SP_B2B + "/cart")
+
+
 @bp.post("/api/filament/tellimus/eta")
 def filament_eta():
     j = request.get_json() or {}
@@ -578,7 +615,7 @@ def filament_arve_teele():
 
 
 # ---------------------------------------------------------------- v99: arved otse Smartprinti portaalist (Teel -> Näita arveid)
-SP_B2B = "https://b2b.smartprint24.com"
+SP_B2B = os.environ.get("SP_B2B") or "https://b2b.smartprint24.com"   # testimiseks saab üle kirjutada
 _SP = {"arved": {}, "aeg": ""}   # viimati tõmmatud arved mälus: id -> {nimi, kuupaev, read, ...}
 _SP_LUKK = threading.Lock()
 
