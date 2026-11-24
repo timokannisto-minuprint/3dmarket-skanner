@@ -98,3 +98,32 @@ async function foSpKorvi(b, ikka){
   } catch(e){ toast(e.message, true); }
   b.disabled = false; b.textContent = t0;
 }
+
+/* ---------- Tellimine: sorteerimine (soodustus, hind, laoseis) */
+const FO_SORT = {disc:['Soodustus', -1], price:['Hind', 1], stock:['Laoseis', 1]};
+function foDisc(sku){ const h = (S.fo.hinnad||{})[sku] || {}; if (!h.p) return -1e9; return h.u ? (1 - h.p / h.u) * 100 : (h.d || 0); }
+function foSortVal(r, k){ const p = r[0], o = foO(p.sku);
+  return k==='disc' ? foDisc(p.sku) : k==='price' ? (o.p || 1e9) : foOn(p.sku); }
+function foSortFn(a, b){ const {k, dir} = S.fo.sort; return dir * (foSortVal(a, k) - foSortVal(b, k)) || a[0].nimi.localeCompare(b[0].nimi); }
+function foFlat(t, items, getP, rowFn){ return items.map(rowFn).join(''); }
+function foSortBar(){ const s = S.fo.sort;
+  return `<div class="fosort">Sorteeri: <button class="${s ? '' : 'on'}" onclick="foSetSort(null)">Grupeeritud</button>${Object.entries(FO_SORT).map(([k, [nm]])=>
+    `<button class="${s && s.k===k ? 'on' : ''}" onclick="foSetSort('${k}')">${nm}${s && s.k===k ? (s.dir * FO_SORT[k][1] > 0 ? (k==='disc' ? ' ↓' : ' ↑') : (k==='disc' ? ' ↑' : ' ↓')) : ''}</button>`).join('')}
+    <span class="sub">${s ? (s.k==='disc' ? 'soodustus võrreldes tavalise ostuhinnaga' : s.k==='price' ? 'ostuhind km-ta' : 'meie laoseis') : ''}</span></div>`; }
+function foSetSort(k){ const s = S.fo.sort;
+  S.fo.sort = !k ? null : (s && s.k===k ? {k, dir: -s.dir} : {k, dir: FO_SORT[k][1]});
+  renderFoOrd(); }
+
+/* ---------- hinnad otse portaalist */
+async function foHinnad(b){
+  if (b) { b.disabled = true; b.textContent = 'Tõmban portaalist… (~20 s)'; }
+  try { const j = await api('/api/filament/tarnija_hinnad', {json:{}});
+    await loadFo(false, true); toast(`Hinnad uuendatud: ${j.n} toodet, kontrollitud ${foT(j.kontrollitud)}`);
+  } catch(e){ toast(e.message, true); if (b) { b.disabled = false; b.textContent = 'Tõmba hinnad kohe'; } }
+}
+const _renderFoOrd0 = renderFoOrd;
+renderFoOrd = function(){ _renderFoOrd0();
+  if (!S.fo.sort) return;
+  document.querySelectorAll('#foList tr[data-id]:not(.vrow)').forEach(tr=>{ const d = foDisc(tr.dataset.id), td = tr.children[6];
+    if (td && d >= 1) td.insertAdjacentHTML('beforeend', `<div class="fodisc">−${Math.round(d)}%</div>`); });
+};

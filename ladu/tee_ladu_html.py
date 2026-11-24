@@ -33,6 +33,22 @@ def tee(src):
         i = fil.index('<a class="ghost filweb"'); fil = fil[:i] + fil[fil.index("</a>", i) + 4:]
     fil = fil.replace("Telefon samas võrgus saadab iga skänni kohe siia.", "Telefon saadab iga skänni kohe lattu (töötab igal pool, kus on internet).")
 
+    # Tellimine: sorteerimine soodustuse/hinna/laoseisu järgi (ainult veebis; funktsioonid web/ylevaade.js-is)
+    sort_rida = "  list.sort((a, b)=>f==='sug' ?"
+    assert sort_rida in js, "Tellimise sort-rida puudub"
+    i = js.index(sort_rida); j = js.index("\n", i)
+    js = js[:j + 1] + "  if (S.fo.sort) list.sort(foSortFn);\n" + js[j + 1:]
+    a = "+ foGrouped('ord', list, r=>r[0], "
+    assert a in js; js = js.replace(a, "+ (S.fo.sort ? foFlat : foGrouped)('ord', list, r=>r[0], ", 1)
+    a = "$('foList').innerHTML = `<table class=\"fil-t\">"
+    assert a in js; js = js.replace(a, "$('foList').innerHTML = foSortBar() + `<table class=\"fil-t\">", 1)
+    # hinnad: ladu tõmbab need nüüd ise portaalist
+    a = "Värsked hinnad tõmbab Claude: kirjuta projektis „kontrolli hinnad“ ja vajuta siis „Uuenda andmed“."
+    assert a in js
+    js = js.replace(a, "${S.fo.hViga ? 'Portaalist tõmbamine ebaõnnestus: ' + esc(S.fo.hViga) + ' ' : (S.fo.hUuenevad ? 'Värsked hinnad on portaalist tulemas. ' : '')}<button onclick=\"foHinnad(this)\">Tõmba hinnad kohe</button>", 1)
+    a = "puudu:j.failid_puudu||[],"
+    assert a in js
+    js = js.replace(a, a + " hUuenevad:j.hinnad_uuenevad, hViga:j.hinnad_viga||'',", 1)
     teema = open(os.path.join(HERE, "web", "teema.css"), encoding="utf-8").read()
     ylevaade = open(os.path.join(HERE, "web", "ylevaade.js"), encoding="utf-8").read()
     # Ülevaade vaade (ainult veebis): nupp vaadete reale ja oma paneel

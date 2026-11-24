@@ -117,7 +117,8 @@ def kataloog():
                      "mat": (r.get("materjal") or "").strip(), "varv": (r.get("varv") or "").strip(),
                      "g": _num(r.get("netokaal_g")), "hind": _num(r.get("ostuhind_eur")), "d": (r.get("labimoot_mm") or "").strip(),
                      "saadav": (r.get("tarnija_saadavus") or "").strip(), "pilt": pilt,
-                     "tid": (r.get("tarnija_id") or "").strip()}
+                     "tid": (r.get("tarnija_id") or "").strip(),
+                     "turl": (r.get("tarnija_url") or "").strip().split("/")[-1]}
                 tooted.append(t)
                 by_sku[sku] = t
                 if t["ean"]:
@@ -419,13 +420,137 @@ def _seaded(c):
     return out
 
 
+# ---------------------------------------------------------------- hetkehinnad otse Smartprinti portaalist (ladu.3dmarket.ee)
+HINNAD = {"lukk": threading.Lock(), "valmis": threading.Event(), "viga": "", "aeg": 0}
+HINNAD["valmis"].set()
+
+
+def _hinnad_vanus_h():
+    j, _ = _json_fail("hinnad_tana.json")
+    try:
+        return (dt.datetime.now(dt.timezone.utc) - dt.datetime.fromisoformat(j.get("checked"))).total_seconds() / 3600
+    except Exception:
+        return 1e9
+
+
+def hinnad_uuenda(oota=20, sunni=False):
+    """Kui hinnad on üle 6 h vanad (või sunni), tõmbab need taustal portaalist; ootab kuni `oota` s. Tagastab True, kui valmis."""
+    import time
+    if not sunni and _hinnad_vanus_h() < 6:
+        return True
+    if not sunni and time.time() - HINNAD["aeg"] < 300 and HINNAD["viga"]:   # viga – ära proovi iga päringuga uuesti
+        return True
+    if HINNAD["lukk"].acquire(blocking=False):
+        HINNAD["valmis"].clear()
+        HINNAD["aeg"] = time.time()
+
+        def too():
+            try:
+                _hinnad_tooma()
+                HINNAD["viga"] = ""
+            except Exception as e:
+                HINNAD["viga"] = str(e)
+                print("  🧵 Hindade uuendamine ebaõnnestus:", e)
+            finally:
+                HINNAD["valmis"].set()
+                HINNAD["lukk"].release()
+        threading.Thread(target=too, daemon=True).start()
+    return HINNAD["valmis"].wait(oota)
+
+
+def _hinnad_tooma():
+    """Sama mis scripts/hinnad_tana.py: kõigi filamentide hetkehind/saadavus nimekirjalehtedelt (~15 s)."""
+    import re, html as _h, statistics
+    s = sp_sessioon()
+    kat = kataloog()["by_sku"]
+    byid = {t["tid"]: k for k, t in kat.items() if t.get("tid")}
+    byurl = {t["turl"]: k for k, t in kat.items() if t.get("turl")}
+    now = {}
+    for page in range(1, 6):
+        h = s.get(f"{SP_B2B}/products/filaments?perpage=250&page={page}", timeout=90).text
+        chunks = h.split('<td class="product-image">')[1:]
+        for body in chunks:
+            idm = re.search(r'data-id="(\d+)"', body)
+            m = re.search(r'<td class="text-center no-wrap">\s*([\d.,]+)\s*€', body)
+            av = re.search(r'no-wrap">[^<]*</td>\s*<td class="text-center">\s*([^<]*?)\s*(?:<p|</td>)', body)
+            nx = re.search(r'next delivery:\s*<br/>\s*([\d-]+)', body)
+            disc = re.search(r'product-badge-disc[^>]*>\s*-?([\d.,]+)%', body)
+            key = byid.get(idm.group(1)) if idm else None
+            if not key:
+                hm = re.search(r'href="([^"]+\.html)"', body)
+                key = byurl.get(hm.group(1).split("/")[-1]) if hm else None
+            if m and key:
+                now[key] = {"p": float(m.group(1).replace(",", ".")), "av": _h.unescape(av.group(1)).strip() if av else "",
+                            "nx": nx.group(1) if nx else "", "d": float(disc.group(1)) if disc else 0}
+        if len(chunks) < 250:
+            break
+    if len(now) < 50:
+        raise RuntimeError(f"Portaalist tuli ainult {len(now)} hinda – lehe ülesehitus võis muutuda.")
+    # tavaline hind: ostuarvete mediaan jääb eelmisest failist alles; muidu 90 p hinnalogi (>= 5 kontrolli); muidu kataloog
+    vana, _ = _json_fail("hinnad_tana.json")
+    vana = vana.get("items") or {}
+    log = os.path.join(kaust(), "arved", "hinnalogi.csv")
+    tana = dt.date.today().isoformat()
+    read = []
+    try:
+        with open(log, encoding="utf-8", newline="") as fh:
+            read = [x for x in csv.DictReader(fh) if x.get("kuupaev") != tana]
+    except OSError:
+        pass
+    os.makedirs(os.path.dirname(log), exist_ok=True)
+    with open(log, "w", encoding="utf-8", newline="") as fh:
+        w = csv.DictWriter(fh, ["kuupaev", "sku", "hind_eur"])
+        w.writeheader()
+        w.writerows(read)
+        w.writerows({"kuupaev": tana, "sku": k, "hind_eur": v["p"]} for k, v in now.items())
+    cut90 = (dt.date.today() - dt.timedelta(days=90)).isoformat()
+    logp = {}
+    for x in read:
+        if x["kuupaev"] >= cut90:
+            try:
+                logp.setdefault(x["sku"], []).append(float(x["hind_eur"]))
+            except ValueError:
+                pass
+    for sku, it in now.items():
+        v = vana.get(sku) or {}
+        if v.get("us") == "ost" and v.get("u"):
+            it["u"], it["us"] = v["u"], "ost"
+        elif len(logp.get(sku, [])) >= 5:
+            it["u"], it["us"] = round(statistics.median(logp[sku]), 2), "log"
+        elif v.get("u"):
+            it["u"], it["us"] = v["u"], v.get("us") or "kat"
+        elif (kat.get(sku) or {}).get("hind"):
+            it["u"], it["us"] = kat[sku]["hind"], "kat"
+    out = {"checked": dt.datetime.now(dt.timezone.utc).isoformat(timespec="minutes"), "items": now, "allikas": "ladu"}
+    p = os.path.join(kaust(), "skanner", "hinnad_tana.json")
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    with open(p + ".tmp", "w", encoding="utf-8") as fh:
+        json.dump(out, fh, ensure_ascii=False, separators=(",", ":"))
+    os.replace(p + ".tmp", p)
+    return len(now)
+
+
+@bp.post("/api/filament/tarnija_hinnad")
+def filament_tarnija_hinnad():
+    """Sunnitud hindade uuendus (nupp)."""
+    if not hinnad_uuenda(oota=120, sunni=True):
+        raise RuntimeError("Hindade tõmbamine võtab kauem – proovi minuti pärast uuesti.")
+    if HINNAD["viga"]:
+        raise RuntimeError(HINNAD["viga"])
+    j, _ = _json_fail("hinnad_tana.json")
+    return _ok(kontrollitud=j.get("checked"), n=len(j.get("items") or {}))
+
+
 @bp.get("/api/filament/tellimine")
 def filament_tellimine():
     """Tellimise andmed: ostuajalugu/kuukulu (tellimine.json), praegused hinnad (hinnad_tana.json), toonerid,
     tellimused (mustand + teel + saabunud) ja seaded (min/siht, eelistused, reeglid)."""
     ordj, om = _json_fail("tellimine.json")
+    uueneb = False
+    if request.args.get("toonerid"):   # "Uuenda andmed" / lehe avamine: vanad hinnad (> 6 h) tõmmatakse portaalist uuesti
+        uueneb = not hinnad_uuenda(oota=20)
     nowj, nm = _json_fail("hinnad_tana.json")
-    out = {"ord": ordj.get("items") or {}, "hist_to": ordj.get("hist_to") or "", "built": ordj.get("built") or "",
+    out = {"hinnad_uuenevad": uueneb, "hinnad_viga": HINNAD.get("viga", ""), "ord": ordj.get("items") or {}, "hist_to": ordj.get("hist_to") or "", "built": ordj.get("built") or "",
            "hinnad": nowj.get("items") or {}, "kontrollitud": nowj.get("checked") or "",
            "failid_puudu": [n for n, m in (("tellimine.json", om), ("hinnad_tana.json", nm)) if m is None]}
     if request.args.get("toonerid"):

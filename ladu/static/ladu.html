@@ -659,6 +659,10 @@ table.fil-t .im{width:52px}
 }
 .spkorv{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:6px}.spkorv span{flex:1;min-width:220px}
 .btnlink{display:inline-block;padding:10px 16px;border-radius:10px;background:var(--ok);color:#fff;text-decoration:none;font-weight:600}
+.fosort{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0 0 10px;font-size:13px;color:var(--muted)}
+.fosort button{padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;cursor:pointer}
+.fosort button.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.fodisc{display:inline-block;margin-top:2px;padding:1px 6px;border-radius:6px;background:rgba(15,118,110,.12);color:var(--ok);font-size:11.5px;font-weight:700}
 
 </style>
 </head>
@@ -974,7 +978,7 @@ async function loadFo(fresh, quiet){
   const run = async()=>{
     if (!S.fil.kat) await loadFil(false, true);
     const j = await api('/api/filament/tellimine' + (S.fo.ton && !fresh ? '' : '?toonerid=1'));
-    Object.assign(S.fo, {loaded:true, ord:j.ord||{}, hinnad:j.hinnad||{}, kontrollitud:j.kontrollitud, hist_to:j.hist_to, puudu:j.failid_puudu||[], tell:j.tellimused||[], seaded:j.seaded||{}});
+    Object.assign(S.fo, {loaded:true, ord:j.ord||{}, hinnad:j.hinnad||{}, kontrollitud:j.kontrollitud, hist_to:j.hist_to, puudu:j.failid_puudu||[], hUuenevad:j.hinnad_uuenevad, hViga:j.hinnad_viga||'', tell:j.tellimused||[], seaded:j.seaded||{}});
     if (j.toonerid) { S.fo.ton = j.toonerid.map(t=>{ const own = [t.n,t.b,t.id,t.d||''].join(' ').toLowerCase(), px = ((t.px||'')+' '+(t.pr||'')).toLowerCase();
       return Object.assign(t, {_o:own, _s:own+' '+px, _c:(own+' '+px).replace(/[^a-z0-9]/g,''), _oc:own.replace(/[^a-z0-9]/g,'')}); }); }
     foMerge(); foTwins(); renderFo(); if ((S.filView||'laos')==='laos') renderFil();   // v99: laoseisus ka teel olev kogus
@@ -1089,19 +1093,20 @@ function renderFoOrd(){
   $('foInfo').textContent = `Hinnad ja saadavus kontrollitud ${foT(S.fo.kontrollitud)} · ostuajalugu kuni ${S.fo.hist_to ? dEE(S.fo.hist_to) : '–'}`;
   const h = foAgeH(S.fo.kontrollitud);
   $('foNote').innerHTML = (S.fo.puudu.length ? `<div class="filnote">Andmefailid puuduvad: ${esc(S.fo.puudu.join(', '))} (kaust Dropbox\\3dmarket claude\\skanner).</div>` : '')
-    + (S.fo.kontrollitud && h >= 6 ? `<div class="filnote">Hinnad on ${h > 48 ? Math.round(h/24) + ' päeva' : Math.round(h) + ' tundi'} vanad. Värsked hinnad tõmbab Claude: kirjuta projektis „kontrolli hinnad“ ja vajuta siis „Uuenda andmed“.</div>` : '');
+    + (S.fo.kontrollitud && h >= 6 ? `<div class="filnote">Hinnad on ${h > 48 ? Math.round(h/24) + ' päeva' : Math.round(h) + ' tundi'} vanad. ${S.fo.hViga ? 'Portaalist tõmbamine ebaõnnestus: ' + esc(S.fo.hViga) + ' ' : (S.fo.hUuenevad ? 'Värsked hinnad on portaalist tulemas. ' : '')}<button onclick="foHinnad(this)">Tõmba hinnad kohe</button></div>` : '');
   renderFoDraft(); renderFoRules();
   if (!busy) renderFoDeals();
   if (busy) return;
   const terms = $('foQ').value.trim().toLowerCase().split(/\s+/).filter(Boolean), f = S.fo.f;
   let list = rows.filter(([p, pl, isPick])=>(!terms.length || terms.every(t=>p._s.includes(t))) && (f==='all' || (f==='sug' ? isPick && (pl.sug > 0 || pl.blocked > 0) : pl.target > 0 || foGMonth(p.sku) > 0)));
   list.sort((a, b)=>f==='sug' ? ((!a[1].sug) - (!b[1].sug)) || (b[1].sug - a[1].sug) || (foGMonth(b[0].sku) - foGMonth(a[0].sku)) : (foGMonth(b[0].sku) - foGMonth(a[0].sku)) || (b[2] - a[2]) || a[0].nimi.localeCompare(b[0].nimi));
+  if (S.fo.sort) list.sort(foSortFn);
   const sugQty = list.reduce((t, [, pl, isPick])=>t + (isPick ? pl.sug : 0), 0), nb = list.filter(r=>r[1].blocked).length;
   $('foAddAll').style.display = f==='sug' && list.length ? '' : 'none';
   $('foListNote').textContent = f==='sug' && list.length ? `${list.filter(r=>r[1].sug).length} toodet, kokku ${sugQty} tk.${nb ? ` Lisaks ${nb} toodet oleks vaja, aga need on tarnijal otsas (neid ei soovita).` : ''} Prof Labi ja Smart Printi paaril arvestab soovitus laoseisu, teel olevat kogust ja kulu mõlema peale kokku. Soovitus läheb Prof Labile, v.a kui on märgitud „eelistan Smart Print“ või Prof Lab on tarnijal otsas.` : '';
   if (!list.length) { $('foList').innerHTML = `<div class="empty" style="margin-top:40px">${f==='sug' ? (Object.keys(S.fo.ord).length ? 'Praegu pole midagi vaja tellida.' : 'Ostuajalugu (tellimine.json) puudub.') : 'Selles vaates tooteid pole.'}</div>`; return; }
-  $('foList').innerHTML = `<table class="fil-t"><thead><tr><th class="im"></th><th>Toode</th><th class="num">Laos</th><th class="num">Teel</th><th class="num">Min / siht</th><th class="num">Kulu kuus</th><th class="num" title="Ostuhind km-ta, ilma transpordita">Hind</th><th>Tarnijal</th><th class="num" style="text-align:center">Soovitus, tk</th><th class="num">Tellimuses</th><th></th></tr></thead><tbody>`
-    + foGrouped('ord', list, r=>r[0], ([p, pl, isPick])=>{ const pm = foPerMonth(p.sku), inD = dl[p.sku] || 0, n = foOn(p.sku), o = foO(p.sku);
+  $('foList').innerHTML = foSortBar() + `<table class="fil-t"><thead><tr><th class="im"></th><th>Toode</th><th class="num">Laos</th><th class="num">Teel</th><th class="num">Min / siht</th><th class="num">Kulu kuus</th><th class="num" title="Ostuhind km-ta, ilma transpordita">Hind</th><th>Tarnijal</th><th class="num" style="text-align:center">Soovitus, tk</th><th class="num">Tellimuses</th><th></th></tr></thead><tbody>`
+    + (S.fo.sort ? foFlat : foGrouped)('ord', list, r=>r[0], ([p, pl, isPick])=>{ const pm = foPerMonth(p.sku), inD = dl[p.sku] || 0, n = foOn(p.sku), o = foO(p.sku);
       const tw = pl.g.find(x=>x.sku!==p.sku), split = tw && foOn(tw.sku) ? `paar ${pl.stock}` : '';
       const auto = isPick ? pl.sug : 0, v = S.fo.edit[p.sku] != null ? S.fo.edit[p.sku] : auto;
       const sugc = foIsOut(p.sku) ? `<span class="warnt">${isPick && pl.blocked ? 'vaja ' + pl.blocked + ' tk,<br>' : ''}otsas, ei saa tellida</span>`
@@ -1394,6 +1399,35 @@ async function foSpKorvi(b, ikka){
   } catch(e){ toast(e.message, true); }
   b.disabled = false; b.textContent = t0;
 }
+
+/* ---------- Tellimine: sorteerimine (soodustus, hind, laoseis) */
+const FO_SORT = {disc:['Soodustus', -1], price:['Hind', 1], stock:['Laoseis', 1]};
+function foDisc(sku){ const h = (S.fo.hinnad||{})[sku] || {}; if (!h.p) return -1e9; return h.u ? (1 - h.p / h.u) * 100 : (h.d || 0); }
+function foSortVal(r, k){ const p = r[0], o = foO(p.sku);
+  return k==='disc' ? foDisc(p.sku) : k==='price' ? (o.p || 1e9) : foOn(p.sku); }
+function foSortFn(a, b){ const {k, dir} = S.fo.sort; return dir * (foSortVal(a, k) - foSortVal(b, k)) || a[0].nimi.localeCompare(b[0].nimi); }
+function foFlat(t, items, getP, rowFn){ return items.map(rowFn).join(''); }
+function foSortBar(){ const s = S.fo.sort;
+  return `<div class="fosort">Sorteeri: <button class="${s ? '' : 'on'}" onclick="foSetSort(null)">Grupeeritud</button>${Object.entries(FO_SORT).map(([k, [nm]])=>
+    `<button class="${s && s.k===k ? 'on' : ''}" onclick="foSetSort('${k}')">${nm}${s && s.k===k ? (s.dir * FO_SORT[k][1] > 0 ? (k==='disc' ? ' ↓' : ' ↑') : (k==='disc' ? ' ↑' : ' ↓')) : ''}</button>`).join('')}
+    <span class="sub">${s ? (s.k==='disc' ? 'soodustus võrreldes tavalise ostuhinnaga' : s.k==='price' ? 'ostuhind km-ta' : 'meie laoseis') : ''}</span></div>`; }
+function foSetSort(k){ const s = S.fo.sort;
+  S.fo.sort = !k ? null : (s && s.k===k ? {k, dir: -s.dir} : {k, dir: FO_SORT[k][1]});
+  renderFoOrd(); }
+
+/* ---------- hinnad otse portaalist */
+async function foHinnad(b){
+  if (b) { b.disabled = true; b.textContent = 'Tõmban portaalist… (~20 s)'; }
+  try { const j = await api('/api/filament/tarnija_hinnad', {json:{}});
+    await loadFo(false, true); toast(`Hinnad uuendatud: ${j.n} toodet, kontrollitud ${foT(j.kontrollitud)}`);
+  } catch(e){ toast(e.message, true); if (b) { b.disabled = false; b.textContent = 'Tõmba hinnad kohe'; } }
+}
+const _renderFoOrd0 = renderFoOrd;
+renderFoOrd = function(){ _renderFoOrd0();
+  if (!S.fo.sort) return;
+  document.querySelectorAll('#foList tr[data-id]:not(.vrow)').forEach(tr=>{ const d = foDisc(tr.dataset.id), td = tr.children[6];
+    if (td && d >= 1) td.insertAdjacentHTML('beforeend', `<div class="fodisc">−${Math.round(d)}%</div>`); });
+};
 
 document.addEventListener('keydown', e=>{ if (e.key==='Escape'){ closeModal(); } });
 function setMode(){}

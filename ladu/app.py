@@ -601,6 +601,12 @@ def ladu_fail():
     data = request.get_data()
     if not data:
         abort(400, "Fail on tühi.")
+    if (request.args.get("nimi") or "").endswith("hinnad_tana.json") and os.path.exists(p):
+        try:   # ladu tõmbab hinnad nüüd ise; vanem fail (nt Dropboxist) ei tohi värskemat üle kirjutada
+            if json.loads(data).get("checked", "") <= json.load(open(p, encoding="utf-8")).get("checked", ""):
+                return ok(sha=_sha(p), vahele="serveris on värskemad hinnad")
+        except ValueError:
+            pass
     tmp = p + ".tmp"
     with open(tmp, "wb") as fh:
         fh.write(data)
