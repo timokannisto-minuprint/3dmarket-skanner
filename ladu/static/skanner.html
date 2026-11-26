@@ -48,6 +48,12 @@ textarea{width:100%;height:80px;background:#000;color:var(--muted);border:1px so
 .net i{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block}
 .net.on i{background:var(--ok)}.net.off i{background:var(--bad)}
 .last .s{font-size:13px;color:var(--ok)}
+.run{max-height:28vh;overflow:auto;margin:0 12px 10px;border:1px solid var(--line);border-radius:12px}
+.run div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:7px 12px;border-top:1px solid var(--line);font-size:14px}
+.run div:first-child{border-top:0;background:#12201d}
+.run .q{font:600 15px var(--mono);white-space:nowrap}
+.run .st{font-size:12px;color:var(--muted)}
+.btn.stop{background:#ff7a66;color:#2a0b06}
 </style>
 </head>
 <body>
@@ -64,7 +70,8 @@ textarea{width:100%;height:80px;background:#000;color:var(--muted);border:1px so
     <button class="start" id="start">Alusta skännimist<span>Kaamera jääb lahti. Näita koode järjest, iga loetud kood piiksub ja läheb kohe lattu (ladu.3dmarket.ee).</span></button>
   </div>
   <div class="last" id="last"><div class="n">Valmis skännima</div><div class="c">Sama pooli uuesti lugemiseks vii kood korraks kaadrist välja.</div></div>
-  <div class="bar"><span class="cnt" id="cnt">0 tk</span><button class="btn ghost" id="undo" hidden>Võta viimane tagasi</button><button class="btn" id="done">Kokkuvõte</button></div>
+  <div class="run" id="run" hidden></div>
+  <div class="bar"><span class="cnt" id="cnt">0 tk</span><button class="btn ghost" id="undo" hidden>Võta viimane tagasi</button><button class="btn stop" id="done">Lõpeta</button></div>
 </div>
 
 <div class="sheet" id="sheet" hidden>
@@ -72,9 +79,9 @@ textarea{width:100%;height:80px;background:#000;color:var(--muted);border:1px so
   <div class="list" id="sumList"></div>
   <p class="note" id="sumNote"></p>
   <div class="row">
-    <button class="btn" id="back">Jätka skännimist</button>
+    <button class="btn" id="clear">Alusta uut sessiooni</button>
   </div>
-  <button class="btn ghost" id="clear">Alusta uut vooru</button>
+  <button class="btn ghost" id="back">Jätka sama sessiooni</button>
 </div>
 
 <script src="zxing.min.js"></script>
@@ -142,7 +149,15 @@ const MODE_CODES = {'3DMSISSE':'receipt', '3DMVALJA':'sale', '3DMINV':'inventory
 function clean(c){ c = String(c).trim(); if (MODE_CODES[c.toUpperCase()]) return c.toUpperCase(); c = c.replace(/\D/g, ''); return c.length === 12 ? '0' + c : c; }
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function nm(s){ return s.n || names[s.c] || ''; }
+function renderRun(){
+  const el = $('run'); el.hidden = !scans.length; if (!scans.length) return;
+  const sum = summary().reverse();   // viimati skännitud ülal
+  el.innerHTML = sum.map(x => { const name = nm(x.s) && !x.s.unk ? esc(nm(x.s)) : `<span class="unk">Tundmatu ${esc(x.c)}</span>`;
+    const st = !x.s.ok ? 'ootel' : (x.s.l != null && !x.s.unk ? 'laos ' + x.s.l : '');
+    return `<div><span>${name}<br><span class="st">${TYPES[x.m]}${st ? ' · ' + st : ''}</span></span><span class="q">${x.m === 'sale' ? '−' : '+'}${x.q}</span></div>`; }).join('');
+}
 function render(){
+  renderRun();
   const n = scans.length; $('cnt').textContent = `${n} tk · ${TYPES[mode]}`; $('undo').hidden = !n;
   if (!n) { $('last').innerHTML = '<div class="n">Valmis skännima</div><div class="c">Sama pooli uuesti lugemiseks vii kood korraks kaadrist välja.</div>'; return; }
   const s = scans[n-1], name = nm(s);
@@ -162,6 +177,13 @@ function onCode(raw){
   scans.push(s); queue.push(s); save(); beep(!!names[code]); render(); flush();
 }
 
+let wake = null, camOn = false;
+function stopCam(){
+  camOn = false;
+  const v = $('v'); try { (v.srcObject && v.srcObject.getTracks() || []).forEach(t => t.stop()); } catch(e){}
+  v.srcObject = null; try { wake && wake.release(); } catch(e){} wake = null;
+  $('start').hidden = false; $('start').innerHTML = 'Alusta skännimist<span>Kaamera jääb lahti. Näita koode järjest, iga loetud kood piiksub ja läheb kohe lattu (ladu.3dmarket.ee).</span>';
+}
 $('start').onclick = async () => {
   try { actx = new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch(e){}
   $('start').textContent = 'Avan kaamerat…';
@@ -169,8 +191,8 @@ $('start').onclick = async () => {
     const v = $('v');
     v.srcObject = await navigator.mediaDevices.getUserMedia({audio: false, video: {facingMode: 'environment', width: {ideal: 1920}, height: {ideal: 1080}}});
     await v.play();
-    $('start').hidden = true;
-    try { await navigator.wakeLock.request('screen'); } catch(e){}
+    $('start').hidden = true; camOn = true;
+    try { wake = await navigator.wakeLock.request('screen'); } catch(e){}
     startLoop(v);
   } catch (e) {
     $('start').innerHTML = 'Kaamerat ei õnnestunud avada<span>Luba kaamera kasutamine (Seaded → Safari → Kaamera) ja proovi uuesti. Kui aadressiribal on hoiatus, pole sertifikaat paigaldatud (vt juhend).</span>';
@@ -208,7 +230,7 @@ async function startLoop(v){
         }
       } catch(e){}
     }
-    setTimeout(tick, native ? 120 : 40);
+    if (camOn) setTimeout(tick, native ? 120 : 40);
   }
   tick();
 }
@@ -222,21 +244,22 @@ $('undo').onclick = async () => {
 
 function summary(){
   const agg = new Map();
-  scans.forEach(s => { const k = s.m + '|' + s.c; const a = agg.get(k) || {m: s.m, c: s.c, q: 0, s}; a.q++; a.s = s; agg.set(k, a); });
-  return [...agg.values()];
+  scans.forEach((s, i) => { const k = s.m + '|' + s.c; const a = agg.get(k) || {m: s.m, c: s.c, q: 0, s}; a.q++; a.s = s; a.i = i; agg.set(k, a); });
+  return [...agg.values()].sort((a, b) => a.i - b.i);
 }
 $('done').onclick = () => {
+  stopCam();
   const sum = summary(), unk = sum.filter(x => x.s.unk || !nm(x.s)).length;
-  $('sumTitle').textContent = `Kokkuvõte: ${scans.length} tk, ${sum.length} koodi`;
+  const per = Object.keys(TYPES).map(m => [m, scans.filter(s => s.m === m).length]).filter(x => x[1]);
+  $('sumTitle').textContent = `Sessioon lõpetatud: ${scans.length} tk` + (per.length ? ' (' + per.map(([m, n]) => `${TYPES[m].toLowerCase()} ${n}`).join(', ') + ')' : '');
   $('sumList').innerHTML = sum.length ? sum.map(x => `<div><span>${nm(x.s) && !x.s.unk ? esc(nm(x.s)) : `<span class="unk">Tundmatu ${esc(x.c)}</span>`}<br><span class="note">${TYPES[x.m]}${x.s.ok && x.s.l != null ? ' · laos ' + x.s.l : ''}</span></span><b>${x.m === 'sale' ? '−' : '+'}${x.q}</b></div>`).join('') : '<div>Midagi pole veel skännitud.</div>';
   $('sumNote').textContent = (queue.length ? `${queue.length} skänni on veel ootel ja saadetakse lattu, kui ühendus tekib. ` : 'Kõik skännid on laos. ')
     + (unk ? `Tundmatud koodid (${unk}) seo Postikeskkonnas: Filament → 📱 Telefon.` : '');
   $('sheet').hidden = false;
 };
 $('back').onclick = () => $('sheet').hidden = true;
-$('clear').onclick = () => {
-  if (!$('clear').dataset.c) { $('clear').dataset.c = 1; $('clear').textContent = queue.length ? 'Ootel skännid jäävad alles. Vajuta uuesti' : 'Tühjendan nimekirja? Vajuta uuesti'; return; }
-  scans = scans.filter(s => queue.some(q => q.g === s.g)); save(); render(); $('sheet').hidden = true; delete $('clear').dataset.c; $('clear').textContent = 'Alusta uut vooru';
+$('clear').onclick = () => {   // uus sessioon: nimekiri tühjaks (ootel skännid saadetakse ikka lattu)
+  scans = []; save(); setMode('sale'); render(); $('sheet').hidden = true;
 };
 setMode(mode); render(); loadNames().then(flush);
 </script>
